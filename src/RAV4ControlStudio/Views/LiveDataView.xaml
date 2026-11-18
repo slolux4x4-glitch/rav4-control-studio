@@ -1,0 +1,80 @@
+<UserControl x:Class="RAV4ControlStudio.Views.LiveDataView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RAV4ControlStudio.Controls">
+    <DockPanel Margin="6">
+        <c:PageHeader DockPanel.Dock="Top" Title="Live Data" Subtitle="Every Mode 01 parameter the ECU reports. Dashboard values refresh each cycle; the rest rotate."/>
+
+        <DockPanel DockPanel.Dock="Top" Margin="8,0,8,8">
+            <Button DockPanel.Dock="Left" Style="{StaticResource ActionButton}" Margin="0,0,8,0" Padding="14,7" FontSize="14" Command="{Binding SaveBaselineCommand}" Content="Save baseline"/>
+            <Button DockPanel.Dock="Left" Style="{StaticResource ActionButton}" Margin="0,0,14,0" Padding="14,7" FontSize="14" Command="{Binding ClearBaselineCommand}" Content="Clear"/>
+            <TextBlock Text="{Binding BaselineInfo}" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+        </DockPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+            <ItemsControl ItemsSource="{Binding LivePids}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="260" Height="162">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Group}" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Display}" FontSize="30" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                                    <ProgressBar Height="4" Margin="0,8,0,0" Minimum="{Binding Min, Mode=OneWay}" Maximum="{Binding Max, Mode=OneWay}"
+                                                 Value="{Binding Value, Mode=OneWay, FallbackValue=0, TargetNullValue=0}" Foreground="{StaticResource AccentBrush}" Background="#1E2E3D" BorderThickness="0"/>
+                                    <TextBlock Text="{Binding BaselineText}" FontSize="11" Foreground="#9AA8B6" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                                <TextBlock Grid.Row="2" Style="{StaticResource Muted}" FontSize="11">
+                                    <Run Text="{Binding PidHex, Mode=OneWay}" FontFamily="Consolas"/>
+                                    <Run Text="  ·  "/>
+                                    <Run Text="{Binding SupportText, Mode=OneWay}"/>
+                                </TextBlock>
+                            </Grid>
+                            <Border.Style>
+                                <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSupported}" Value="False">
+                                            <Setter Property="Opacity" Value="0.4"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel Visibility="{Binding HasCustomParameters, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="Custom parameters" FontSize="18" FontWeight="SemiBold" Margin="10,12,0,4"/>
+                <ItemsControl ItemsSource="{Binding CustomValues}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Width="260" Height="130">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Source}" Foreground="#9AA8B6" FontSize="11" FontFamily="Consolas"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Display}" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

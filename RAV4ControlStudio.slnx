@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Obd2.Core/Obd2.Core.csproj" />
+    <Project Path="src/RAV4ControlStudio/RAV4ControlStudio.csproj" />
+  </Folder>
+</Solution>

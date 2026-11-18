@@ -1,0 +1,3 @@
+Trouble code titles, explanations, common causes and symptoms in dtc_obdex.json.gz are taken from the
+OBDex project (https://github.com/foerbsnavi/OBDex), generic SAE J2012 data released under CC0 1.0
+(public domain dedication). English fields only. Thanks to the OBDex maintainers.

@@ -1,0 +1,138 @@
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using Obd2.Core.Elm;
+using Obd2.Core.Transport;
+
+namespace Obd2.Core.Tests;
+
+/// <summary>Fake ELM327 that answers slowly, to test timeout behaviour on a real TCP socket.</summary>
+internal sealed class SlowElm : IDisposable
+{
+    private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
+    private readonly Dictionary<string, (int DelayMs, string Reply)> _replies;
+
+    public SlowElm(Dictionary<string, (int DelayMs, string Reply)> replies)
+    {
+        _replies = replies;
+        _listener.Start();
+        Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
+        Task.Run(Serve);
+    }
+
+    public int Port { get; }
+
+    private void Serve()
+    {
+        try
+        {
+            using var client = _listener.AcceptTcpClient();
+            using var stream = client.GetStream();
+            var line = new StringBuilder();
+            var buffer = new byte[64];
+            int read;
+            while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                for (int i = 0; i < read; i++)
+                {
+                    if (buffer[i] != '\r') { line.Append((char)buffer[i]); continue; }
+                    var cmd = line.ToString(); line.Clear();
+                    var (delay, reply) = _replies.TryGetValue(cmd, out var r) ? r : (0, "NO DATA");
+                    Thread.Sleep(delay);
+                    var bytes = Encoding.ASCII.GetBytes(reply + "\r\r>");
+                    stream.Write(bytes, 0, bytes.Length);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException) { }
+    }
+
+    public void Dispose() => _listener.Stop();
+}
+
+public class TransportTimingProbe
+{
+    [Fact]
+    public void WifiLinkSurvivesSeveralReceiveTimeoutsBeforeTheReply()
+    {
+        // The transport polls with a 200 ms socket timeout; a 900 ms reply means four timeouts first.
+        using var elm = new SlowElm(new() { ["010C"] = (900, "410C1AF8") });
+        using var transport = new TcpElmTransport("127.0.0.1", elm.Port);
+        transport.Open();
+
+        transport.WriteLine("010C");
+        string reply = transport.ReadUntilPrompt(TimeSpan.FromSeconds(4));
+
+        Assert.Contains("410C1AF8", reply);
+    }
+
+    [Fact]
+    public void AResetConnectionIsReportedStraightAwayNotAfterTheTimeout()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(() =>
+        {
+            var c = listener.AcceptTcpClient();
+            Thread.Sleep(300);
+            c.Client.LingerState = new LingerOption(true, 0); // close with a reset, like an adapter losing power
+            c.Close();
+        });
+
+        using var transport = new TcpElmTransport("127.0.0.1", port);
+        transport.Open();
+        transport.WriteLine("010C");
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        Assert.Throws<IOException>(() => transport.ReadUntilPrompt(TimeSpan.FromSeconds(6)));
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(2), $"took {clock.Elapsed.TotalSeconds:0.0} s");
+        server.Wait();
+        listener.Stop();
+    }
+
+    [Fact]
+    public void AfterATimeoutTheNextCommandGetsItsOwnReply()
+    {
+        using var elm = new SlowElm(new()
+        {
+            ["010C"] = (1500, "410C1AF8"),   // slower than the 500 ms the client waits
+            ["0105"] = (0, "41057B"),
+        });
+        using var client = new ElmClient(new TcpElmTransport("127.0.0.1", elm.Port));
+        client.Open();
+
+        Assert.Throws<TimeoutException>(() => client.SendObd("010C", TimeSpan.FromMilliseconds(500)));
+
+        // The late 010C reply must be thrown away, not returned as the coolant reading.
+        var second = client.SendObd("0105", TimeSpan.FromSeconds(4));
+        Assert.Equal("41057B", second.HexLines.FirstOrDefault());
+
+        var third = client.SendObd("0105", TimeSpan.FromSeconds(4));
+        Assert.Equal("41057B", third.HexLines.FirstOrDefault());
+    }
+
+    [Fact]
+    public void AnotherThreadCannotSendInTheMiddleOfAHeaderSequence()
+    {
+        var transport = new ScriptedTransport();
+        using var client = new ElmClient(transport);
+        using var started = new ManualResetEventSlim();
+
+        var scan = Task.Run(() => client.Exclusive(() =>
+        {
+            client.SendAt("ATSH7E0");
+            started.Set();
+            Thread.Sleep(300); // a live-data read arrives here
+            client.SendObd("3E00");
+            client.SendAt("ATSH7DF");
+            return 0;
+        }));
+
+        started.Wait();
+        var live = Task.Run(() => client.SendObd("0105"));
+        Task.WaitAll(scan, live);
+
+        Assert.Equal(new[] { "ATSH7E0", "3E00", "ATSH7DF", "0105" }, transport.Sent);
+    }
+}

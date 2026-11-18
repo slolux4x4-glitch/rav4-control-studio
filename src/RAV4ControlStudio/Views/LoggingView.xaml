@@ -1,0 +1,85 @@
+<UserControl x:Class="RAV4ControlStudio.Views.LoggingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RAV4ControlStudio.Controls">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="1.3*"/>
+        </Grid.ColumnDefinitions>
+
+        <c:PageHeader Grid.ColumnSpan="2" Title="Data Logging" Subtitle="Record live data to a CSV file: one row per poll cycle, one column per supported parameter."/>
+
+        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Recording" Style="{StaticResource CardTitle}"/>
+
+                <Border Padding="16" CornerRadius="12" Background="#0E161F" BorderBrush="{StaticResource BorderBrush2}" BorderThickness="1">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="12" Height="12" Margin="0,0,10,0"
+                                     Fill="{Binding LoggingBrush}"/>
+                            <TextBlock Text="{Binding LoggingStatusText}" FontSize="18" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <TextBlock Margin="0,12,0,0" Style="{StaticResource Muted}">
+                            <Run Text="Rows written: "/><Run Text="{Binding LogRowCount, Mode=OneWay}" Foreground="{StaticResource TextBrush}"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap">
+                            <Run Text="File: "/><Run Text="{Binding LogFilePath, Mode=OneWay}" Foreground="{StaticResource TextBrush}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                    <Button Style="{StaticResource ActionButton}" Command="{Binding ToggleLoggingCommand}" Width="200">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource IconText}" Text="&#xE9D2;" Margin="0,0,10,0"/>
+                            <TextBlock Text="{Binding LoggingButtonText}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ActionButton}" Command="{Binding OpenLogsFolderCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource IconText}" Text="&#xE8B7;" Margin="0,0,10,0"/>
+                            <TextBlock Text="Open logs folder" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <TextBlock Style="{StaticResource Muted}" Margin="0,18,0,0" TextWrapping="Wrap">
+                    Logs are saved to Documents\RAV4 Control Studio\Logs. Open them in Excel or any spreadsheet tool.
+                    Start logging after connecting; it stops automatically when you disconnect.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}">
+            <DockPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <TextBlock Text="Saved logs" Style="{StaticResource CardTitle}" Margin="0" DockPanel.Dock="Left"/>
+                    <Button Style="{StaticResource ActionButton}" Command="{Binding ReplayLogCommand}" DockPanel.Dock="Right" Padding="12,7" Margin="6,6,0,6" ToolTip="Play the selected log through the gauges and graphs, as if connected"><TextBlock Text="Replay" VerticalAlignment="Center"/></Button>
+                    <Button Style="{StaticResource ActionButton}" Command="{Binding OpenLogFileCommand}" DockPanel.Dock="Right" Padding="12,7">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource IconText}" Text="&#xE8E5;" Margin="0,0,8,0"/>
+                            <TextBlock Text="Open selected" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </DockPanel>
+                <ListBox ItemsSource="{Binding LogFiles}" SelectedItem="{Binding SelectedLogFile}"
+                         Background="Transparent" BorderThickness="0" MouseDoubleClick="LogList_MouseDoubleClick">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4,6">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Details}" Style="{StaticResource Muted}" FontSize="12"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

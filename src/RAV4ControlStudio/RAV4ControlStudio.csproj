@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>RAV4ControlStudio</RootNamespace>
+    <AssemblyName>RAV4ControlStudio</AssemblyName>
+    <ApplicationIcon>Assets/app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0</Version>
+    <Product>RAV4 Control Studio</Product>
+    <Description>Read-only OBD-II diagnostics for the 2021 Toyota RAV4 (ELM327 adapter).</Description>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Obd2.Core\Obd2.Core.csproj" />
+    <PackageReference Include="System.Management" Version="9.0.0" />
+    <Resource Include="Assets\**\*.png" />
+    <Resource Include="Assets/app.ico" />
+  </ItemGroup>
+
+</Project>

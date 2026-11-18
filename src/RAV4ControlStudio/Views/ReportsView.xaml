@@ -1,0 +1,71 @@
+<UserControl x:Class="RAV4ControlStudio.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RAV4ControlStudio.Controls">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="1.3*"/>
+        </Grid.ColumnDefinitions>
+
+        <c:PageHeader Grid.ColumnSpan="2" Title="Reports" Subtitle="A plain-text summary of the vehicle, I/M readiness, fault codes and the latest live values."/>
+
+        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="New report" Style="{StaticResource CardTitle}"/>
+                <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap">
+                    Includes the VIN and decode, adapter and protocol, readiness monitors, stored and pending codes,
+                    and the most recent value of every live parameter.
+                </TextBlock>
+
+                <Button Style="{StaticResource ActionButton}" Command="{Binding CreateReportCommand}"
+                        HorizontalAlignment="Left" Margin="0,18,0,0" Width="220">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource IconText}" Text="&#xE8A5;" Margin="0,0,10,0"/>
+                        <TextBlock Text="Create Report" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ActionButton}" Command="{Binding CreatePdfReportCommand}"
+                        HorizontalAlignment="Left" Width="220">
+                    <TextBlock Text="Create PDF report" VerticalAlignment="Center"/>
+                </Button>
+                <Button Style="{StaticResource ActionButton}" Command="{Binding OpenReportsFolderCommand}"
+                        HorizontalAlignment="Left" Width="220">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource IconText}" Text="&#xE8B7;" Margin="0,0,10,0"/>
+                        <TextBlock Text="Open reports folder" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <TextBlock Margin="0,16,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap">
+                    <Run Text="Last report: "/><Run Text="{Binding LastReportPath, Mode=OneWay}" Foreground="{StaticResource TextBrush}"/>
+                </TextBlock>
+
+                <TextBlock Text="Last trip" Style="{StaticResource CardTitle}" Margin="0,18,0,6"/>
+                <TextBlock Text="{Binding LastTripText}" FontFamily="Consolas" FontSize="13"/>
+                <TextBlock Style="{StaticResource Muted}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                           Text="A trip summary is saved automatically when you disconnect after at least 10 seconds. Economy is estimated from the MAF sensor."/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Saved reports" Style="{StaticResource CardTitle}"/>
+                <ListBox ItemsSource="{Binding ReportFiles}" Background="Transparent" BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4,6">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Details}" Style="{StaticResource Muted}" FontSize="12"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

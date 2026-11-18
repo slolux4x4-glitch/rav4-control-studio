@@ -1,0 +1,90 @@
+<UserControl x:Class="RAV4ControlStudio.Views.AboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RAV4ControlStudio.Controls">
+    <UserControl.Resources>
+        <!-- Tab-style list item -->
+        <Style x:Key="AboutTab" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="#121C27" BorderBrush="#2A3644" BorderThickness="1" CornerRadius="8" Padding="16,8">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#4A5A6B"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1865A0"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#1865A0"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel Margin="6">
+        <c:PageHeader DockPanel.Dock="Top" Title="About" Subtitle="Version, runtimes and libraries in use, data sources and credits."/>
+
+        <!-- App summary -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Background="#0D1721" Padding="18,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Image Source="/Assets/app_icon.png" Width="72" Height="72" Margin="0,0,18,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock FontSize="24" FontWeight="SemiBold" Text="RAV4 Control Studio"/>
+                    <TextBlock FontSize="14" Foreground="#9AA8B6" Margin="0,2,0,0">
+                        <Run Text="Version "/><Run Text="{Binding AboutVersion, Mode=OneWay}"/>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" MaxWidth="640"
+                               Text="Read-only OBD-II diagnostics for the 2021 Toyota RAV4. Connects to an ELM327 adapter over Bluetooth, USB or Wi-Fi, or runs a built-in simulator."/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <Button Style="{StaticResource ActionButton}" Margin="0,0,0,6" Padding="18,8" FontSize="14" Command="{Binding CopyAboutCommand}" Content="Copy details"/>
+                    <Button Style="{StaticResource ActionButton}" Margin="0" Padding="18,8" FontSize="14" Command="{Binding OpenProjectsCommand}" Content="Open data folder"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Section tabs -->
+        <ListBox DockPanel.Dock="Top" Margin="6,0,6,0" Background="Transparent" BorderThickness="0"
+                 ItemsSource="{Binding AboutSections}" SelectedItem="{Binding SelectedAboutSection}"
+                 ItemContainerStyle="{StaticResource AboutTab}" DisplayMemberPath="Title"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+        </ListBox>
+
+        <!-- Selected section -->
+        <Border Style="{StaticResource Card}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding SelectedAboutSection.Items}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#1A2836" BorderThickness="0,0,0,1" Padding="0,9">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="210"/><ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Label}" Foreground="#9AA8B6" FontSize="15"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="15" TextWrapping="Wrap"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+    </DockPanel>
+</UserControl>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Obd2.Core</RootNamespace>
+    <AssemblyName>Obd2.Core</AssemblyName>
+    <Description>ELM327 / OBD-II (SAE J1979) protocol core. Read-only by design.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data/dtc.txt" LogicalName="dtc.txt" />
+    <EmbeddedResource Include="Data/dtc_obdex.json.gz" LogicalName="dtc_obdex.json.gz" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Ports" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

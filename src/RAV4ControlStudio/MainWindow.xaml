@@ -1,0 +1,175 @@
+<Window x:Class="RAV4ControlStudio.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="RAV4 Control Studio"
+        Icon="Assets/app.ico"
+        Height="833" Width="1480"
+        MinHeight="800" MinWidth="1300"
+        WindowStyle="None" ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="68" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+    <DockPanel>
+        <DockPanel.LayoutTransform>
+            <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}"/>
+        </DockPanel.LayoutTransform>
+
+        <!-- Title bar: logo, title, header buttons, caption buttons -->
+        <Border DockPanel.Dock="Top" Height="68"
+                Background="{StaticResource HeaderBrush}"
+                BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" Margin="18,0,0,0" VerticalAlignment="Center">
+                    <Image Source="Assets/logo.png" Height="50" Margin="0,0,14,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="RAV4 Control Studio" FontSize="26" FontWeight="SemiBold"/>
+                        <TextBlock Foreground="#AEB9C5" FontSize="15">
+                            <Run Text="ECU Bench Interface   |   "/><Run Text="{Binding VehicleTitle, Mode=OneWay}"/><Run Text=" (M20A-FKS / CVT)"/>
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource HeaderButton}" Command="{Binding OpenProjectsCommand}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Open the project folder">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="/Assets/icons/hdr_projects.png" Width="26" Height="26" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="Projects" FontSize="17" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource HeaderButton}" Command="{Binding ShowSettingsCommand}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Settings">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="/Assets/icons/hdr_settings.png" Width="26" Height="26" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="Settings" FontSize="17" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource HeaderButton}" Command="{Binding ShowHelpCommand}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Help">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="/Assets/icons/hdr_help.png" Width="26" Height="26" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="Help" FontSize="17" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource HeaderButton}" Command="{Binding ShowAboutCommand}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="About this app">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="/Assets/icons/st_info.png" Width="22" Height="22" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="About" FontSize="17" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Border Width="1" Height="28" Background="{StaticResource BorderBrush2}" Margin="10,0"/>
+                    <Button x:Name="MinButton" Style="{StaticResource WinButton}" Content="&#xE921;"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MinButton_Click"/>
+                    <Button x:Name="MaxButton" Style="{StaticResource WinButton}" Content="&#xE739;"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MaxButton_Click"/>
+                    <Button Style="{StaticResource WinCloseButton}" Content="&#xE8BB;"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="CloseButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Status bar -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource SidebarBrush}"
+                BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,1,0,0" Padding="16,7">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <Ellipse Width="14" Height="14" Fill="{Binding ConnectionBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding ConnectionText}" FontSize="15" VerticalAlignment="Center"/>
+                    <TextBlock Text="   |   Read-Only (TX Disabled)   |   " FontSize="15" Foreground="#C9D3DD" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding LinkSpeedText}" FontSize="15" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Image Source="/Assets/icons/st_info.png" Width="18" Height="18" Margin="0,0,10,0"/><TextBlock Text="RAV4 Control Studio v1.0.0 (Concept)" FontSize="15" Foreground="#C9D3DD" VerticalAlignment="Center"/></StackPanel>
+                <Button DockPanel.Dock="Right" Style="{StaticResource HeaderButton}" Margin="0,0,18,0" Padding="10,2" Command="{Binding ToggleUnitsCommand}" ToolTip="Switch between metric and imperial units"><TextBlock Text="{Binding UnitsShortText}" FontSize="15" Foreground="#C9D3DD"/></Button>
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource MutedBrush}"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="24,0"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Navigation sidebar -->
+        <Border DockPanel.Dock="Left" Width="228" Background="{StaticResource SidebarBrush}"
+                BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="8,12,8,10">
+                <Border DockPanel.Dock="Bottom" Margin="2,10,2,0" Padding="10,9" CornerRadius="10"
+                        BorderBrush="{StaticResource GoodBrush}" BorderThickness="1.5" Background="#0E1C17">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Assets/icons/bench.png" Width="28" Height="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <StackPanel>
+                            <TextBlock Text="Bench Mode" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource GoodBrush}"/>
+                            <TextBlock Text="Read-Only (TX Disabled)" FontSize="12" Foreground="{StaticResource GoodBrush}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <ListBox x:Name="NavList" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                         ItemContainerStyle="{StaticResource NavItem}"
+                         SelectionChanged="NavList_SelectionChanged" Margin="0,4,0,0">
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_overview.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Overview" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_connection.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="OBD2 Connection" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_live.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Live Data" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_metrics.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Metrics" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_trends.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Trends" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_fuel.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Fuel and O2" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_diag.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Diagnostics (DTCs)" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_logging.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Data Logging" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem IsEnabled="False" ToolTip="Not available yet">
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_can.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="CAN Monitor" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_ecu.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="ECU Information" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_discovery.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="ECU Discovery" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_tests.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Tests (Read-Only)" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/nav_reports.png" Width="25" Height="25" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Reports" VerticalAlignment="Center"/></StackPanel>
+                    </ListBoxItem>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- Page content -->
+        <DockPanel Margin="10,6,10,8">
+            <Border DockPanel.Dock="Top" Visibility="{Binding HasAlerts, Converter={StaticResource BoolToVis}}" Margin="6,0,6,6" Padding="16,10"
+                    Background="#2A0F0F" BorderBrush="#8A2A2A" BorderThickness="1" CornerRadius="8">
+                <TextBlock Text="{Binding AlertText}" Foreground="{StaticResource BadBrush}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            </Border>
+            <Border x:Name="NotConnectedBanner" DockPanel.Dock="Top" Visibility="Collapsed" Margin="6,0,6,6" Padding="16,10"
+                    Background="#2A200C" BorderBrush="#7A5A12" BorderThickness="1" CornerRadius="8">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="12,0,0,0" Padding="14,6" FontSize="14"
+                            Content="Connect..." Click="BannerConnect_Click"/>
+                    <TextBlock Foreground="{StaticResource WarnBrush}" FontSize="15" VerticalAlignment="Center"
+                               Text="Not connected. Values on this page appear once you connect to the ECU (or use Demo mode)."/>
+                </DockPanel>
+            </Border>
+            <ContentControl x:Name="PageHost"/>
+        </DockPanel>
+    </DockPanel>
+</Window>
