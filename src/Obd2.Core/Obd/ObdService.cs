@@ -136,17 +136,6 @@ public sealed class ObdService : IDisposable
         return data is null ? null : pid.Decode(data);
     }
 
-    public IReadOnlyDictionary<byte, double> ReadPids(IEnumerable<PidDefinition> pids)
-    {
-        var results = new Dictionary<byte, double>();
-        foreach (var pid in pids)
-        {
-            var value = ReadPid(pid);
-            if (value.HasValue) results[pid.Pid] = value.Value;
-        }
-        return results;
-    }
-
     public IReadOnlyList<DtcInfo> ReadStoredDtcs() => ReadDtcs("03", 0x43, DtcStatus.Stored);
 
     public IReadOnlyList<DtcInfo> ReadPendingDtcs() => ReadDtcs("07", 0x47, DtcStatus.Pending);

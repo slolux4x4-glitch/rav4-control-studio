@@ -85,6 +85,8 @@ public sealed class RemoteViewServer : IDisposable
         _cts?.Cancel();
         try { _listener?.Stop(); } catch (SocketException) { }
         _listener = null;
+        _cts?.Dispose();
+        _cts = null;
     }
 
     /// <summary>

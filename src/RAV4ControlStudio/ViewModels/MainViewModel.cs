@@ -32,6 +32,28 @@ public sealed record MonitorRow(string Name, string StatusText, Brush StatusBrus
 /// <summary>One frame line in the CAN Bus Monitor (ID, DLC and data as the concept art shows).</summary>
 public sealed record CanRow(string TimeMs, string Id, int Dlc, string Data, bool IsRequest);
 
+/// <summary>
+/// One fixed line of the CAN table. The table keeps the same rows and only changes their text, which is far cheaper
+/// for the grid than inserting and removing rows five times a second.
+/// </summary>
+public sealed class CanRowSlot : ObservableObject
+{
+    private string _time = "", _id = "", _dlc = "", _data = "";
+
+    public string TimeMs { get => _time; private set => Set(ref _time, value); }
+    public string Id { get => _id; private set => Set(ref _id, value); }
+    public string Dlc { get => _dlc; private set => Set(ref _dlc, value); }
+    public string Data { get => _data; private set => Set(ref _data, value); }
+
+    public void Show(CanRow? row)
+    {
+        TimeMs = row?.TimeMs ?? "";
+        Id = row?.Id ?? "";
+        Dlc = row is null ? "" : row.Dlc.ToString();
+        Data = row?.Data ?? "";
+    }
+}
+
 public sealed record CategoryOption(char? Letter, string Label)
 {
     public override string ToString() => Label;
@@ -236,7 +258,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 Raise(nameof(IsSerialMode));
                 Raise(nameof(IsWifiMode));
                 Raise(nameof(IsDemoMode));
-                Raise(nameof(ConnectionHint));
             }
         }
     }
@@ -244,13 +265,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public bool IsSerialMode { get => _mode == ConnectionMode.Serial; set { if (value) SelectedMode = ConnectionMode.Serial; } }
     public bool IsWifiMode { get => _mode == ConnectionMode.Wifi; set { if (value) SelectedMode = ConnectionMode.Wifi; } }
     public bool IsDemoMode { get => _mode == ConnectionMode.Demo; set { if (value) SelectedMode = ConnectionMode.Demo; } }
-
-    public string ConnectionHint => _mode switch
-    {
-        ConnectionMode.Serial => "Bluetooth or USB ELM327. Bluetooth adapters appear as a COM port after pairing.",
-        ConnectionMode.Wifi => "ELM327 Wi-Fi adapter. Join its network first, then enter its address (usually 192.168.0.10, port 35000).",
-        _ => "Simulated RAV4 ECU. No hardware needed.",
-    };
 
     public ObservableCollection<PortOption> Ports { get; } = new();
 
@@ -336,8 +350,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     public bool IsConnected => State is LinkState.Connected or LinkState.Simulated or LinkState.Replay;
-
-    public bool IsDemo => State == LinkState.Simulated;
 
     private string _statusMessage = "Ready. Choose how to reach the adapter, then Connect.";
     public string StatusMessage
@@ -507,7 +519,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     // ----- CAN-style monitor -----
 
-    public ObservableCollection<CanRow> CanRows { get; } = new();
+    /// <summary>Fixed rows shown by the CAN table, newest first.</summary>
+    public IReadOnlyList<CanRowSlot> CanRows { get; } = Enumerable.Range(0, CanCapacity).Select(_ => new CanRowSlot()).ToList();
+
+    // Newest first; copied into CanRows once per screen refresh.
+    private readonly List<CanRow> _canHistory = new(CanCapacity + 16);
+
+    private void ShowCanHistory()
+    {
+        for (int i = 0; i < CanRows.Count; i++)
+            CanRows[i].Show(i < _canHistory.Count ? _canHistory[i] : null);
+    }
 
     // ----- Diagnostics -----
 
@@ -518,7 +540,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private FreezeFrameData? _freeze;
     public string FreezeTitle => _freeze is null ? "No freeze frame stored" : $"Freeze frame for {_freeze.Dtc}";
-    public IEnumerable<FreezeValue> FreezeValues => _freeze?.Values ?? Enumerable.Empty<FreezeValue>();
     public IEnumerable<TestStepRow> FreezeRows =>
         (_freeze?.Values ?? Array.Empty<FreezeValue>()).Select(v => new TestStepRow(v.Name, "", Units.Format(v.Unit, v.Value, v.Format), _accent));
 
@@ -1109,7 +1130,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             _minVolt = _maxVolt = double.NaN;
             _chartTimes.Clear();
             foreach (var s in ChartSeriesList) s.Clear();
-            CanRows.Clear();
+            _canHistory.Clear();
+            ShowCanHistory();
 
             AdapterId = service.AdapterId;
             ProtocolText = service.Protocol;
@@ -1417,8 +1439,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         // Only the newest few requests are visible in the CAN table, so older ones are dropped.
         var recent = new List<TrafficEntry>();
         while (_trafficQueue.TryDequeue(out var entry)) recent.Add(entry);
+        if (recent.Count == 0) return;
         foreach (var entry in recent.Skip(Math.Max(0, recent.Count - 8)))
             AddCanRows(entry);
+        ShowCanHistory();
     }
 
     private void ApplyReadings(IReadOnlyDictionary<byte, double> readings)
@@ -1515,16 +1539,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         string time = ((entry.Time - _sessionStart).TotalMilliseconds).ToString("#,##0.000");
 
         string requestData = FrameData(entry.Request);
-        CanRows.Insert(0, new CanRow(time, "0x7DF", 8, requestData, true));
+        _canHistory.Insert(0, new CanRow(time, "0x7DF", 8, requestData, true));
 
         string firstLine = entry.Response.Split(" | ")[0].Trim();
         string replyHex = firstLine.Replace(" ", "");
         bool isHex = replyHex.Length > 0 && replyHex.Length % 2 == 0 && replyHex.All(Uri.IsHexDigit);
         string replyData = isHex ? FrameData(replyHex) : firstLine.Length > 0 ? firstLine : "—";
-        CanRows.Insert(1, new CanRow(time, "0x7E8", 8, replyData, false));
+        _canHistory.Insert(1, new CanRow(time, "0x7E8", 8, replyData, false));
 
-        while (CanRows.Count > CanCapacity)
-            CanRows.RemoveAt(CanRows.Count - 1);
+        if (_canHistory.Count > CanCapacity)
+            _canHistory.RemoveRange(CanCapacity, _canHistory.Count - CanCapacity);
     }
 
     /// <summary>Formats an ISO-TP single frame: length byte, data bytes, zero padding to 8 bytes.</summary>
@@ -1634,16 +1658,28 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    private static void OpenFolder(string folder)
+    private void OpenFolder(string folder)
     {
         Directory.CreateDirectory(folder);
         OpenUri(folder);
     }
 
-    private static void OpenFile(string path) => OpenUri(path);
+    private void OpenFile(string path) => OpenUri(path);
 
-    private static void OpenUri(string target) =>
-        Process.Start(new ProcessStartInfo { FileName = target, UseShellExecute = true });
+    /// <summary>Opens a folder, file or settings page with Windows' default app.</summary>
+    private void OpenUri(string target)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo { FileName = target, UseShellExecute = true });
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            Notify(Path.HasExtension(target) && File.Exists(target)
+                ? $"Windows has no app set up to open {Path.GetExtension(target)} files ({ex.Message}). The file is at {target}"
+                : $"Could not open {target}: {ex.Message}");
+        }
+    }
 
     private void OpenCodesFolder()
     {

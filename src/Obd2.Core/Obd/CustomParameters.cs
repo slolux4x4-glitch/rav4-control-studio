@@ -88,8 +88,16 @@ public sealed class CustomParameter
 /// <summary>Tiny arithmetic expression compiler: numbers, A..H (reply bytes), + - * / and parentheses.</summary>
 public static class FormulaEvaluator
 {
+    /// <summary>Longest formula accepted. Real decoding formulas are a few dozen characters.</summary>
+    public const int MaxLength = 200;
+
+    /// <summary>Deepest nesting of brackets and minus signs accepted, so a broken file cannot exhaust the stack.</summary>
+    public const int MaxDepth = 32;
+
     public static Func<byte[], double> Compile(string formula)
     {
+        if (formula.Length > MaxLength)
+            throw new FormatException($"formula is longer than {MaxLength} characters");
         var parser = new Parser(formula);
         var fn = parser.ParseExpression();
         parser.ExpectEnd();
@@ -133,20 +141,28 @@ public static class FormulaEvaluator
             }
         }
 
+        private int _depth;
+
         private Func<byte[], double> ParseFactor()
         {
             Skip();
             if (_i >= _s.Length) throw new FormatException($"formula '{_s}' ends too early");
 
-            if (Peek('-')) { _i++; var f = ParseFactor(); return b => -f(b); }
-            if (Peek('('))
+            if (Peek('-') || Peek('('))
             {
-                _i++;
-                var inner = ParseExpression();
-                Skip();
-                if (!Peek(')')) throw new FormatException($"missing ')' in formula '{_s}'");
-                _i++;
-                return inner;
+                if (++_depth > MaxDepth) throw new FormatException($"formula '{_s}' is nested too deeply");
+                try
+                {
+                    if (Peek('-')) { _i++; var f = ParseFactor(); return b => -f(b); }
+
+                    _i++;
+                    var inner = ParseExpression();
+                    Skip();
+                    if (!Peek(')')) throw new FormatException($"missing ')' in formula '{_s}'");
+                    _i++;
+                    return inner;
+                }
+                finally { _depth--; }
             }
 
             char c = _s[_i];

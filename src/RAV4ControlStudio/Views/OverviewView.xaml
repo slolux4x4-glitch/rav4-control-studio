@@ -120,7 +120,7 @@
         <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource Card}">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6"><Image Source="/Assets/icons/sec_can.png" Width="26" Height="26" Margin="0,0,10,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="CAN Bus Monitor (Live)" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
-                <DataGrid ItemsSource="{Binding CanRows}" FontSize="15" RowHeight="28" VerticalScrollBarVisibility="Hidden" HorizontalGridLinesBrush="Transparent">
+                <DataGrid ItemsSource="{Binding CanRows}" IsReadOnly="True" FontSize="15" RowHeight="28" VerticalScrollBarVisibility="Hidden" HorizontalGridLinesBrush="Transparent">
                     <DataGrid.Resources>
                         <Style TargetType="DataGridColumnHeader"><Setter Property="Background" Value="#1C2A38"/><Setter Property="Foreground" Value="White"/><Setter Property="Padding" Value="12,8"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="BorderThickness" Value="0"/></Style>
                     </DataGrid.Resources>

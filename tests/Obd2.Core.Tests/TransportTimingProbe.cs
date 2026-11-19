@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Obd2.Core.Elm;
+using Obd2.Core.Obd;
 using Obd2.Core.Transport;
 
 namespace Obd2.Core.Tests;
@@ -48,6 +49,25 @@ internal sealed class SlowElm : IDisposable
     }
 
     public void Dispose() => _listener.Stop();
+}
+
+public class FormulaLimitTests
+{
+    [Fact]
+    public void DeeplyNestedFormulaIsRejectedNotACrash()
+    {
+        Assert.Throws<FormatException>(() => FormulaEvaluator.Compile(new string('(', 150) + "A" + new string(')', 150)));
+        Assert.Throws<FormatException>(() => FormulaEvaluator.Compile(new string('-', 150) + "A"));
+        Assert.Throws<FormatException>(() => FormulaEvaluator.Compile("A+" + string.Join("+", Enumerable.Repeat("1", 200))));
+    }
+
+    [Fact]
+    public void NormalFormulasStillWork()
+    {
+        Assert.Equal(1000, FormulaEvaluator.Compile("(A*256+B)/4")(new byte[] { 0x0F, 0xA0 }));
+        Assert.Equal(-40, FormulaEvaluator.Compile("-(40)")(Array.Empty<byte>()));
+        Assert.Equal(5, FormulaEvaluator.Compile("((((((A))))))")(new byte[] { 5 }));
+    }
 }
 
 public class TransportTimingProbe

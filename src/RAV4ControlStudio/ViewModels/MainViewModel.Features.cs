@@ -245,18 +245,27 @@ public sealed partial class MainViewModel
         var cts = _reconnectCts = new CancellationTokenSource();
         const int attempts = 6;
 
-        for (int i = 1; i <= attempts; i++)
+        try
         {
-            Notify($"Connection lost. Reconnecting ({i}/{attempts})...");
-            try { await Task.Delay(i * 2000, cts.Token); }
-            catch (OperationCanceledException) { return; }
+            for (int i = 1; i <= attempts; i++)
+            {
+                Notify($"Connection lost. Reconnecting ({i}/{attempts})...");
+                try { await Task.Delay(i * 2000, cts.Token); }
+                catch (OperationCanceledException) { return; }
 
-            if (IsConnected || cts.IsCancellationRequested) return;
-            await ConnectAsync();
-            if (cts.IsCancellationRequested) return;
-            if (IsConnected) { Notify("Reconnected."); return; }
+                if (IsConnected || cts.IsCancellationRequested) return;
+                await ConnectAsync();
+                if (cts.IsCancellationRequested) return;
+                if (IsConnected) { Notify("Reconnected."); return; }
+            }
+            Notify("Could not reconnect. Check the adapter, then press Connect ECU.");
         }
-        Notify("Could not reconnect. Check the adapter, then press Connect ECU.");
+        finally
+        {
+            // Release this attempt's cancellation source (only clear the field if a newer attempt has not replaced it).
+            if (ReferenceEquals(_reconnectCts, cts)) _reconnectCts = null;
+            cts.Dispose();
+        }
     }
 
     // ===================================================== alerts
@@ -709,6 +718,8 @@ public sealed partial class MainViewModel
         }
         finally
         {
+            _scanCts?.Dispose();
+            _scanCts = null;
             IsScanning = false;
         }
     }

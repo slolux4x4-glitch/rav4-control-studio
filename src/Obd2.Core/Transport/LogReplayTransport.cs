@@ -17,7 +17,6 @@ public sealed class LogReplayTransport : IElmTransport
     private readonly List<double> _times = new();
     private readonly List<double?[]> _rows = new();
     private readonly List<PidDefinition> _columns = new();
-    private double[] _last = Array.Empty<double>();
     private string? _own;
 
     public LogReplayTransport(string csvPath)

@@ -47,11 +47,6 @@ public static class DtcDatabase
         }
     }
 
-    public static int UserCodeCount
-    {
-        get { lock (Gate) return _user.Count; }
-    }
-
     public static DtcEntry? Find(string code) =>
         All.FirstOrDefault(e => e.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
 
