@@ -230,7 +230,21 @@ public sealed partial class MainViewModel
         ReloadParametersCommand = new RelayCommand(ReloadCustomParameters);
         ClearTrendsCommand = new RelayCommand<TrendItem>(_ => { foreach (var t in TrendItems) t.IsSelected = false; });
         SaveSessionLogCommand = new RelayCommand(SaveSessionLog);
+        ClearCodesCommand = new RelayCommand(() => Notify(ClearCodesNote), () => ClearCodesEnabled);
     }
+
+    // ===================================================== clear codes (future, disabled)
+
+    /// <summary>
+    /// Placeholder for a possible future "clear codes" feature. Disabled until there are instructions to build
+    /// it. It does not, and cannot, send anything to the car: the clear request (service 04) is not on
+    /// ElmClient's read-only allowlist, and the button only shows this note.
+    /// </summary>
+    internal const bool ClearCodesEnabled = false;
+
+    public string ClearCodesNote => "Clearing codes is not available. This app is read-only; clearing may come in a future version.";
+
+    public RelayCommand ClearCodesCommand { get; private set; } = null!;
 
     // ===================================================== session log (every command and reply)
 

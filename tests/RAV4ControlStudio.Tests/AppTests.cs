@@ -189,6 +189,28 @@ public class ModeBadgeTests
     }
 }
 
+public class ClearCodesPlaceholderTests
+{
+    // The Clear codes button is a placeholder for a possible future feature and must stay off until there are
+    // instructions to build it. Turning it on should be a deliberate change that also updates this test.
+    [Fact]
+    public void ClearCodesStaysDisabled()
+    {
+        bool enabled = typeof(MainViewModel)
+            .GetField("ClearCodesEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .GetValue(null) is true;
+        Assert.False(enabled);
+    }
+
+    [Fact]
+    public void TheAdapterStillRefusesTheClearRequest()
+    {
+        using var client = new ElmClient(new SimulatedElmTransport());
+        client.Open();
+        Assert.Throws<InvalidOperationException>(() => client.SendObd("04"));
+    }
+}
+
 public class ChartUnitTests
 {
     [Fact]

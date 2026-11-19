@@ -18,7 +18,7 @@
         <Border Grid.ColumnSpan="2" Style="{StaticResource Card}" Background="#0D1721">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Image Source="/Assets/icons/dtc_ok.png" Width="58" Height="58" Margin="0,0,18,0" RenderOptions.BitmapScalingMode="HighQuality"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -35,6 +35,12 @@
                 </StackPanel>
                 <Button Grid.Column="3" Style="{StaticResource LargeButton}" Command="{Binding RefreshDiagnosticsCommand}">
                     <StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_refresh.png" Width="24" Height="24" Margin="0,0,10,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Read codes" FontSize="17" VerticalAlignment="Center"/></StackPanel>
+                </Button>
+                <!-- Placeholder for a possible future feature. Always disabled: the app is read-only and nothing behind
+                     this button can send the clear-codes request (OBD-II service 04), which ElmClient refuses anyway. -->
+                <Button Grid.Column="4" Style="{StaticResource LargeButton}" Margin="10,0,0,0" Command="{Binding ClearCodesCommand}"
+                        ToolTipService.ShowOnDisabled="True" ToolTip="{Binding ClearCodesNote}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource IconText}" Text="&#xE74D;" Margin="0,0,10,0"/><TextBlock Text="Clear codes" FontSize="17" VerticalAlignment="Center"/></StackPanel>
                 </Button>
             </Grid>
         </Border>
