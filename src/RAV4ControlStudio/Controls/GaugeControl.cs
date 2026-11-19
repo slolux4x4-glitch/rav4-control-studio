@@ -57,18 +57,22 @@ public sealed class GaugeControl : FrameworkElement
 
     private static readonly Brush WarnBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B)));
     private static readonly Brush DangerBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)));
-    private static readonly Brush TrackBrush = Frozen(new SolidColorBrush(Color.FromRgb(0x16, 0x2C, 0x41)));
-    private static readonly Brush TickBrush = Frozen(new SolidColorBrush(Color.FromRgb(0x6F, 0x88, 0xA0)));
-    private static readonly Brush ScaleTextBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xC9, 0xD6, 0xE2)));
-    private static readonly Pen RimPen = Frozen(new Pen(new SolidColorBrush(Color.FromRgb(0x1E, 0x4A, 0x70)), 1.5));
-    private static readonly Pen InnerRimPen = Frozen(new Pen(new SolidColorBrush(Color.FromArgb(0x55, 0x2A, 0xA7, 0xF5)), 1));
-    private static readonly Brush FaceBrush = Frozen(new RadialGradientBrush(Color.FromRgb(0x0B, 0x19, 0x27), Color.FromRgb(0x06, 0x0F, 0x18)));
+    private static readonly Brush TrackBrush = Frozen(new LinearGradientBrush(Color.FromRgb(0x14, 0x34, 0x52), Color.FromRgb(0x1B, 0x2C, 0x3D), 90));
+    private static readonly Brush TickBrush = Frozen(new SolidColorBrush(Color.FromArgb(0xD0, 0xC4, 0xD4, 0xE4)));
+    private static readonly Brush CaptionBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xA9, 0xB8, 0xC6)));
+    private static readonly Brush ScaleTextBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xE2, 0xEA, 0xF2)));
+    private static readonly Pen RimPen = Frozen(new Pen(new SolidColorBrush(Color.FromRgb(0x27, 0x5E, 0x8C)), 1.6));
+    private static readonly Pen InnerRimPen = Frozen(new Pen(new SolidColorBrush(Color.FromArgb(0x70, 0x2A, 0xA7, 0xF5)), 1.2));
+    private static readonly Brush BezelBrush = Frozen(new LinearGradientBrush(Color.FromRgb(0x1A, 0x33, 0x4C), Color.FromRgb(0x08, 0x12, 0x1C), 90));
+    private static readonly Brush FaceBrush = Frozen(new RadialGradientBrush(Color.FromRgb(0x0C, 0x1A, 0x29), Color.FromRgb(0x05, 0x0C, 0x14)));
 
     private Drawing? _static;
     private Size _staticSize;
     private Brush? _text, _muted;
     private Brush? _glowSource, _glow, _fill;
-    private Pen? _glowPen, _fillPen;
+    private Pen? _glowPen, _fillPen, _haloPen;
+    private Brush? _halo;
+    private Drawing? _ticks;
     private readonly TextCache _labels = new();
 
     protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
@@ -86,7 +90,7 @@ public sealed class GaugeControl : FrameworkElement
 
         double r = Math.Min(w, h) / 2 - 2;
         double cx = w / 2, cy = h / 2;
-        double band = r * 0.86, thick = Math.Max(4, r * 0.085);
+        double band = r * 0.855, thick = Math.Max(5, r * 0.11);
         double dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
 
         if (_static is null || _staticSize != new Size(w, h))
@@ -108,10 +112,14 @@ public sealed class GaugeControl : FrameworkElement
             {
                 var (glow, fill) = ValueBrushes();
                 double a1 = Angle(end);
-                DrawArc(dc, PenCache.Get(ref _glowPen, glow, thick * 2.4), cx, cy, band, StartAngle, a1);
+                DrawArc(dc, PenCache.Get(ref _haloPen, _halo!, thick * 3.2), cx, cy, band, StartAngle, a1);
+                DrawArc(dc, PenCache.Get(ref _glowPen, glow, thick * 1.8), cx, cy, band, StartAngle, a1);
                 DrawArc(dc, PenCache.Get(ref _fillPen, fill, thick), cx, cy, band, StartAngle, a1);
             }
         }
+
+        // Ticks are drawn over the arcs, as on the reference dials.
+        if (_ticks is not null) dc.DrawDrawing(_ticks);
 
         var text = _text ??= (Brush)(TryFindResource("TextBrush") ?? Brushes.White);
         var muted = _muted ??= (Brush)(TryFindResource("MutedBrush") ?? Brushes.Gray);
@@ -122,14 +130,15 @@ public sealed class GaugeControl : FrameworkElement
         else if (hasValue && !double.IsNaN(WarningFrom) && Value >= WarningFrom) valueBrush = WarnBrush;
 
         string valueText = hasValue ? Value.ToString(ValueFormat, CultureInfo.InvariantCulture) : "--";
-        var big = _labels.Get(valueText, r * 0.34, valueBrush, dpi, FontWeights.Bold);
-        double top = cy - big.Height * 0.62;
+        double bigSize = r * (valueText.Length >= 4 ? 0.36 : 0.44);
+        var big = _labels.Get(valueText, bigSize, valueBrush, dpi, FontWeights.SemiBold);
+        double top = cy - big.Height * 0.66;
         dc.DrawText(big, new Point(cx - big.Width / 2, top));
 
         if (!string.IsNullOrEmpty(Unit))
         {
-            var unit = _labels.Get(Unit, r * 0.15, muted, dpi, FontWeights.Normal);
-            dc.DrawText(unit, new Point(cx - unit.Width / 2, top + big.Height * 0.92));
+            var unit = _labels.Get(Unit, r * 0.165, muted, dpi, FontWeights.Normal);
+            dc.DrawText(unit, new Point(cx - unit.Width / 2, top + big.Height * 0.9));
         }
     }
 
@@ -138,9 +147,9 @@ public sealed class GaugeControl : FrameworkElement
         var group = new DrawingGroup();
         using (var dc = group.Open())
         {
-            // Bezel and face
-            dc.DrawEllipse(FaceBrush, RimPen, new Point(cx, cy), r, r);
-            dc.DrawEllipse(null, InnerRimPen, new Point(cx, cy), r * 0.955, r * 0.955);
+            // Bezel ring (lit from above) around a dark face
+            dc.DrawEllipse(BezelBrush, RimPen, new Point(cx, cy), r, r);
+            dc.DrawEllipse(FaceBrush, InnerRimPen, new Point(cx, cy), r * 0.94, r * 0.94);
 
             // Track
             DrawArc(dc, new Pen(TrackBrush, thick), cx, cy, band, StartAngle, StartAngle - SweepAngle);
@@ -148,23 +157,33 @@ public sealed class GaugeControl : FrameworkElement
             // Warning and danger zones, always lit like a rev counter's red line
             if (Maximum > Minimum)
             {
+                // One band blending orange into red, starting at the warning (or danger) value
                 double warn = double.IsNaN(WarningFrom) ? double.NaN : Math.Clamp(WarningFrom, Minimum, Maximum);
                 double danger = double.IsNaN(DangerFrom) ? double.NaN : Math.Clamp(DangerFrom, Minimum, Maximum);
-                if (!double.IsNaN(warn))
+                double from = !double.IsNaN(warn) ? warn : danger;
+                if (!double.IsNaN(from) && Maximum > from)
                 {
-                    double warnEnd = double.IsNaN(danger) ? Maximum : danger;
-                    if (warnEnd > warn) Zone(dc, WarnBrush, cx, cy, band, thick, warn, warnEnd);
+                    double redAt = double.IsNaN(danger) || double.IsNaN(warn) ? 0.6 : Math.Clamp((danger - from) / (Maximum - from), 0.05, 0.95);
+                    var a = PointOnCircle(cx, cy, band, Angle(from));
+                    var b = PointOnCircle(cx, cy, band, Angle(Maximum));
+                    var zone = new LinearGradientBrush(new GradientStopCollection
+                    {
+                        new(Color.FromRgb(0xF7, 0xA3, 0x1A), 0),
+                        new(Color.FromRgb(0xF9, 0x73, 0x16), redAt * 0.8),
+                        new(Color.FromRgb(0xEF, 0x2B, 0x2B), redAt),
+                        new(Color.FromRgb(0xE1, 0x1D, 0x2A), 1),
+                    }, a, b) { MappingMode = BrushMappingMode.Absolute };
+                    zone.Freeze();
+                    var glow = new SolidColorBrush(Color.FromArgb(0x30, 0xF5, 0x5A, 0x1E)); glow.Freeze();
+                    DrawArc(dc, new Pen(glow, thick * 2.6), cx, cy, band, Angle(from), Angle(Maximum));
+                    DrawArc(dc, new Pen(zone, thick), cx, cy, band, Angle(from), Angle(Maximum));
                 }
-                if (!double.IsNaN(danger) && Maximum > danger)
-                    Zone(dc, DangerBrush, cx, cy, band, thick, danger, Maximum);
             }
-
-            DrawScale(dc, cx, cy, r, band, thick, dpi);
 
             if (!string.IsNullOrEmpty(Caption) && r > 60)
             {
-                var caption = _labels.Get(Caption, r * 0.085, TickBrush, dpi, FontWeights.Normal);
-                dc.DrawText(caption, new Point(cx - caption.Width / 2, cy + r * 0.66));
+                var caption = _labels.Get(Caption, r * 0.095, CaptionBrush, dpi, FontWeights.Normal);
+                dc.DrawText(caption, new Point(cx - caption.Width / 2, cy + r * 0.62));
             }
 
             if (Icon is not null)
@@ -174,6 +193,11 @@ public sealed class GaugeControl : FrameworkElement
             }
         }
         group.Freeze();
+
+        var ticks = new DrawingGroup();
+        using (var tdc = ticks.Open()) DrawScale(tdc, cx, cy, r, band, thick, dpi);
+        ticks.Freeze();
+        _ticks = ticks;
         return group;
     }
 
@@ -190,9 +214,12 @@ public sealed class GaugeControl : FrameworkElement
         var majorPen = new Pen(TickBrush, Math.Max(1, r * 0.012)); majorPen.Freeze();
         var minorPen = new Pen(TickBrush, Math.Max(0.6, r * 0.006)); minorPen.Freeze();
 
-        double inner = band - thick / 2 - r * 0.02;  // ticks hang inside the track
-        double labelRadius = inner - r * 0.20;
-        double fontSize = r * 0.105;
+        // Major ticks cross the whole band and reach a little inside it; minor ticks sit on its inner half.
+        double outer = band + thick / 2;
+        double majorIn = band - thick / 2 - r * 0.05;
+        double minorIn = band - thick * 0.15;
+        double labelRadius = majorIn - r * 0.13;
+        double fontSize = r * 0.12;
         bool labels = fontSize >= 7.5;
         double divisor = LabelDivisor == 0 ? 1 : LabelDivisor;
 
@@ -200,7 +227,7 @@ public sealed class GaugeControl : FrameworkElement
         {
             double v = Minimum + i * step;
             double a = Angle(v);
-            dc.DrawLine(majorPen, PointOnCircle(cx, cy, inner, a), PointOnCircle(cx, cy, inner - r * 0.09, a));
+            dc.DrawLine(majorPen, PointOnCircle(cx, cy, outer, a), PointOnCircle(cx, cy, majorIn, a));
 
             if (labels)
             {
@@ -215,16 +242,9 @@ public sealed class GaugeControl : FrameworkElement
                 double mv = v + step * m / (minors + 1);
                 if (mv > Maximum) break;
                 double ma = Angle(mv);
-                dc.DrawLine(minorPen, PointOnCircle(cx, cy, inner, ma), PointOnCircle(cx, cy, inner - r * 0.045, ma));
+                dc.DrawLine(minorPen, PointOnCircle(cx, cy, band + thick / 2, ma), PointOnCircle(cx, cy, minorIn, ma));
             }
         }
-    }
-
-    private void Zone(DrawingContext dc, Brush brush, double cx, double cy, double band, double thick, double from, double to)
-    {
-        var glow = brush.Clone(); glow.Opacity = 0.22; glow.Freeze();
-        DrawArc(dc, new Pen(glow, thick * 2.4), cx, cy, band, Angle(from), Angle(to));
-        DrawArc(dc, new Pen(brush, thick), cx, cy, band, Angle(from), Angle(to));
     }
 
     // A soft halo and a light-to-full gradient of the accent colour, rebuilt only when the accent changes.
@@ -233,7 +253,8 @@ public sealed class GaugeControl : FrameworkElement
         if (_glow is null || !ReferenceEquals(_glowSource, Accent))
         {
             var color = Accent is SolidColorBrush s ? s.Color : Colors.DeepSkyBlue;
-            _glow = Frozen(new SolidColorBrush(color) { Opacity = 0.22 });
+            _glow = Frozen(new SolidColorBrush(color) { Opacity = 0.30 });
+            _halo = Frozen(new SolidColorBrush(color) { Opacity = 0.10 });
             var light = Color.FromRgb((byte)((color.R + 255) / 2), (byte)((color.G + 255) / 2), (byte)((color.B + 255) / 2));
             _fill = Frozen(new LinearGradientBrush(color, light, new Point(0, 1), new Point(1, 0)));
             _glowSource = Accent;
