@@ -458,11 +458,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private double Tmp(double c) => _imperial ? CtoF(c) : c;
 
     public double SpeedShown => Speed.HasValue ? Spd(Speed.Value) : double.NaN;
-    public double SpeedGaugeMax => _imperial ? 125 : 200;
+    public double SpeedGaugeMax => _imperial ? 120 : 200;
+    public double SpeedGaugeStep => _imperial ? 10 : 20;
     public string SpeedUnitText => _imperial ? "mph" : "km/h";
     public double CoolantShown => Coolant.HasValue ? Tmp(Coolant.Value) : double.NaN;
-    public double TempGaugeMin => _imperial ? 32 : 0;
+    // Normal running is 80–100 °C; the dial turns orange from 105 °C and red from 115 °C.
+    public double TempGaugeMin => _imperial ? 100 : 40;
     public double TempGaugeMax => _imperial ? 250 : 120;
+    public double TempGaugeStep => _imperial ? 25 : 10;
+    public double TempWarnFrom => Tmp(105);
+    public double TempDangerFrom => Tmp(115);
     public string TempUnitText => _imperial ? "°F" : "°C";
     public string IntakeTempText => IntakeTemp.HasValue ? $"{Tmp(IntakeTemp.Value):0} {TempUnitText}" : "—";
 
@@ -488,7 +493,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         foreach (var name in new[]
         {
-            nameof(SpeedShown), nameof(SpeedGaugeMax), nameof(SpeedUnitText), nameof(CoolantShown), nameof(TempGaugeMin),
+            nameof(SpeedShown), nameof(SpeedGaugeMax), nameof(SpeedGaugeStep), nameof(TempGaugeStep), nameof(TempWarnFrom), nameof(TempDangerFrom),
+            nameof(SpeedUnitText), nameof(CoolantShown), nameof(TempGaugeMin),
             nameof(TempGaugeMax), nameof(TempUnitText), nameof(IntakeTempText), nameof(PeakRpmText), nameof(PeakSpeedText),
             nameof(PeakCoolantText), nameof(VoltageRangeText), nameof(CoolantLegendText), nameof(FuelEconomyText), nameof(TripEconomyText),
             nameof(FuelTrimAssessment), nameof(LambdaAssessment), nameof(CatalystText),
