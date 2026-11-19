@@ -4,7 +4,7 @@ namespace Obd2.Core.Obd;
 /// Decodes Mode 01 PID 01 ("monitor status since DTCs cleared").
 /// Byte A: bit 7 = MIL on, bits 0-6 = stored DTC count.
 /// Byte B: bit 3 = ignition type (1 = compression, 0 = spark). Bits 0-2 = continuous monitors supported,
-///         bits 4-6 = their status (1 = not complete). Spark-ignition only.
+///         bits 4-6 = their status (1 = not complete), for both ignition types.
 /// Bytes C (supported) and D (1 = not complete) cover the non-continuous monitors.
 /// Spark-ignition mapping is standard. Compression-ignition mapping is best-effort.
 /// </summary>
@@ -35,14 +35,12 @@ public static class ReadinessDecoder
 
         var monitors = new List<MonitorStatus>();
 
-        if (!compression)
+        // The three continuous monitors are reported the same way for both ignition types.
+        for (int i = 0; i < ContinuousNames.Length; i++)
         {
-            for (int i = 0; i < ContinuousNames.Length; i++)
-            {
-                bool supported = (d[1] & (1 << i)) != 0;
-                bool complete = (d[1] & (1 << (i + 4))) == 0;
-                monitors.Add(new MonitorStatus(ContinuousNames[i], supported, complete));
-            }
+            bool supported = (d[1] & (1 << i)) != 0;
+            bool complete = (d[1] & (1 << (i + 4))) == 0;
+            monitors.Add(new MonitorStatus(ContinuousNames[i], supported, complete));
         }
 
         var names = compression ? CompressionNames : SparkNames;

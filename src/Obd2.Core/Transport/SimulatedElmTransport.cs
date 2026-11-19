@@ -185,7 +185,7 @@ public sealed class SimulatedElmTransport : IElmTransport
         var bytes = new List<byte> { 0x49, 0x02, 0x01 };
         bytes.AddRange(Encoding.ASCII.GetBytes(SimulatedVin));
 
-        var sb = new StringBuilder();
+        var sb = new StringBuilder($"{bytes.Count:X3}\r"); // a real ELM327 announces the length first ("014")
         for (int i = 0; i < bytes.Count; i += 7)
         {
             var chunk = bytes.Skip(i).Take(7).ToArray();

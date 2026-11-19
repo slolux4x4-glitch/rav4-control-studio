@@ -128,14 +128,22 @@ public sealed class ObdService : IDisposable
         var response = _elm.SendObd(request, TimeSpan.FromSeconds(6));
         if (response.HasError) return chunks;
 
-        string all = string.Concat(response.HexLines);
-        int header = all.IndexOf($"49{pid:X2}", StringComparison.Ordinal);
-        if (header < 0 || all.Length < header + 6) return chunks;
-
-        var data = FromHex(all[(header + 6)..]);
+        var data = InfoData(response, pid);
         for (int i = 0; i + size <= data.Length; i += size)
             chunks.Add(data[i..(i + size)]);
         return chunks;
+    }
+
+    /// <summary>
+    /// The data bytes of a Mode 09 reply. Every message starts "49 PID" and a third byte (the item count on CAN,
+    /// the line number on older protocols), then data. On CAN the first answering unit's message is used; older
+    /// protocols spread one answer over several numbered lines, which are joined.
+    /// </summary>
+    private byte[] InfoData(ElmResponse response, byte pid)
+    {
+        var matching = Messages(response).Where(m => m.Length > 3 && m[0] == 0x49 && m[1] == pid).ToList();
+        if (matching.Count == 0) return Array.Empty<byte>();
+        return IsCan ? matching[0][3..] : matching.SelectMany(m => m[3..]).ToArray();
     }
 
     private static string AsText(byte[] bytes) =>
@@ -324,36 +332,32 @@ public sealed class ObdService : IDisposable
     /// </summary>
     internal static List<byte[]> Messages(ElmResponse response)
     {
-        var messages = new List<byte[]>();
-        List<byte>? current = null;
-        int expected = 0;
+        // Each message is built up as a list of bytes, with the length the adapter announced (or -1 if none).
+        var messages = new List<(List<byte> Bytes, int Expected)>();
 
-        foreach (var line in response.HexLines)
+        for (int i = 0; i < response.HexLines.Count; i++)
         {
-            if (line.Length <= 3) // length line of a multi-frame message
+            var line = response.HexLines[i];
+            if (line.Length <= 3) // length line of a multi-frame message ("014" = 20 bytes)
             {
-                current = new List<byte>();
-                expected = Convert.ToInt32(line, 16);
-                messages.Add(Array.Empty<byte>()); // filled in below
+                messages.Add((new List<byte>(), Convert.ToInt32(line, 16)));
                 continue;
             }
 
             var bytes = FromHex(line);
-            if (current is not null && current.Count < expected)
-            {
-                current.AddRange(bytes);
-                messages[^1] = current.Take(expected).ToArray();
-                if (current.Count >= expected) current = null;
-            }
+            bool joins = messages.Count > 0 && (
+                response.IsContinuation(i) ||                                  // "1:", "2:" … frame
+                (messages[^1].Expected > 0 && messages[^1].Bytes.Count == 0)); // frame 0 after a length line
+            if (joins)
+                messages[^1].Bytes.AddRange(bytes);
             else
-            {
-                current = null;
-                messages.Add(bytes);
-            }
+                messages.Add((new List<byte>(bytes), -1));
         }
 
-        messages.RemoveAll(m => m.Length == 0);
-        return messages;
+        return messages
+            .Where(m => m.Bytes.Count > 0)
+            .Select(m => (m.Expected > 0 ? m.Bytes.Take(m.Expected) : m.Bytes).ToArray()) // drop frame padding
+            .ToList();
     }
 
     /// <summary>The supported-PID bitmap for one block, combined (OR) across every control unit that answers.</summary>
@@ -375,18 +379,14 @@ public sealed class ObdService : IDisposable
     private string? ReadVin()
     {
         var response = _elm.SendObd("0902", TimeSpan.FromSeconds(6));
-        string all = string.Concat(response.HexLines);
+        if (response.HasError) return null;
 
-        int header = all.IndexOf("4902", StringComparison.Ordinal);
-        if (header < 0) return null;
-
-        // After "49 02" comes the message count byte, then the 17 ASCII bytes of the VIN.
-        string afterHeader = all[(header + 6)..];
-        var bytes = FromHex(afterHeader);
+        // 17 ASCII characters. Older protocols pad the first line with zero bytes, so those are dropped.
+        var bytes = InfoData(response, 0x02).Where(b => b != 0).ToArray();
         if (bytes.Length < 17) return null;
 
         var vin = System.Text.Encoding.ASCII.GetString(bytes, 0, 17);
-        return vin.All(c => char.IsLetterOrDigit(c)) ? vin.ToUpperInvariant() : null;
+        return vin.All(char.IsLetterOrDigit) ? vin.ToUpperInvariant() : null;
     }
 
     /// <summary>

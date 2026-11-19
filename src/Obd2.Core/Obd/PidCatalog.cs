@@ -52,8 +52,11 @@ public static class PidCatalog
         new PidDefinition(0x5C, "Engine oil temperature", "°C", "Engine", 1, -40, 210, d => d[0] - 40, "0"),
     };
 
-    /// <summary>PIDs polled every cycle for the Overview gauges.</summary>
-    public static readonly byte[] DashboardPids = { 0x0C, 0x05, 0x42, 0x11 };
+    /// <summary>
+    /// PIDs polled every cycle: the Overview and Metrics dials (rpm, coolant, voltage, throttle, speed) and the air
+    /// flow rate. Speed and air flow also feed trip distance and fuel economy, which go wrong if they are stale.
+    /// </summary>
+    public static readonly byte[] DashboardPids = { 0x0C, 0x05, 0x42, 0x11, 0x0D, 0x10 };
 
     public static PidDefinition? Find(byte pid) => All.FirstOrDefault(p => p.Pid == pid);
 }

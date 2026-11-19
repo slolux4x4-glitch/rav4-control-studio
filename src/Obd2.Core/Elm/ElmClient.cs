@@ -9,8 +9,15 @@ public sealed record ElmResponse(
     string Command,
     IReadOnlyList<string> Lines,
     IReadOnlyList<string> HexLines,
-    string? Error)
+    string? Error,
+    IReadOnlyList<bool>? Continues = null)
 {
+    /// <summary>
+    /// For each of <see cref="HexLines"/>: true when it is a later frame ("1:", "2:" …) of a multi-frame message,
+    /// so it belongs to the message before it.
+    /// </summary>
+    public bool IsContinuation(int index) => Continues is not null && index < Continues.Count && Continues[index];
+
     public bool HasError => Error is not null;
 
     public string Summary =>
@@ -37,7 +44,7 @@ public sealed class ElmClient : IDisposable
 
     private static readonly string[] ErrorTokens =
     {
-        "NO DATA", "STOPPED", "?", "UNABLE TO CONNECT", "BUS INIT", "CAN ERROR",
+        "NO DATA", "STOPPED", "?", "UNABLE TO CONNECT", "CAN ERROR",
         "BUS ERROR", "DATA ERROR", "FB ERROR", "BUFFER FULL", "<RX ERROR", "ERROR"
     };
 
@@ -161,6 +168,7 @@ public sealed class ElmClient : IDisposable
     {
         var lines = new List<string>();
         var hex = new List<string>();
+        var continuation = new List<bool>();
         string? error = null;
 
         foreach (var rawLine in raw.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
@@ -171,6 +179,18 @@ public sealed class ElmClient : IDisposable
             if (line.StartsWith("SEARCHING", StringComparison.OrdinalIgnoreCase))
                 continue;
 
+            // K-line cars wake up with "BUS INIT: ...OK" before the first reply. That is a progress message,
+            // not a failure; only "BUS INIT: ...ERROR" (or similar) means the bus could not be started.
+            if (line.StartsWith("BUS INIT", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!line.EndsWith("OK", StringComparison.OrdinalIgnoreCase))
+                {
+                    lines.Add(line);
+                    error ??= line;
+                }
+                continue;
+            }
+
             lines.Add(line);
             var upper = line.ToUpperInvariant();
 
@@ -180,13 +200,18 @@ public sealed class ElmClient : IDisposable
                 continue;
             }
 
-            // Multi-frame replies come back as "0: 490201...", "1: ...". Drop the frame index.
+            // Multi-frame replies come back as "0: 490201...", "1: ...". Drop the frame index, but remember
+            // whether this line continues the message started by frame 0.
+            bool continues = FramePrefix.IsMatch(upper) && upper[0] != '0';
             var compact = Whitespace.Replace(FramePrefix.Replace(upper, ""), "");
             if (compact.Length > 0 && HexOnly.IsMatch(compact))
+            {
                 hex.Add(compact);
+                continuation.Add(continues);
+            }
         }
 
-        return new ElmResponse(command, lines, hex, error);
+        return new ElmResponse(command, lines, hex, error, continuation);
     }
 
     public void Dispose()

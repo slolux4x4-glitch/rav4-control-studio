@@ -113,6 +113,56 @@ public class CanDtcTests
         Assert.Contains((byte)0x0C, obd.SupportedPids);
     }
 
+    [Theory]
+    [InlineData("014\r0: 49 02 01 4A 54 4D 50\r1: 31 52 46 56 30 4D 44\r2: 30 31 32 33 34 35 00\r")] // with length line
+    [InlineData("0: 49 02 01 4A 54 4D 50\r1: 31 52 46 56 30 4D 44\r2: 30 31 32 33 34 35\r")]          // some clones omit it
+    public void VinIsReadFromAMultiFrameReply(string reply)
+    {
+        var t = new ScriptedTransport();
+        t.Replies["0902"] = reply;
+        using var obd = CanService(t);
+        obd.LoadEcuInfo();
+        Assert.Equal("JTMP1RFV0MD012345", obd.Vin);
+    }
+
+    [Fact]
+    public void VinOnAnOlderProtocolIsJoinedFromNumberedLines()
+    {
+        // K-line / J1850: five lines "49 02 0N" + 4 bytes, the first padded with zeros.
+        var t = new ScriptedTransport();
+        t.Replies["0902"] = "490201000000 4A\r49020254 4D 50 31\r4902035246 56 30\r4902044D44 30 31\r4902053233 34 35\r".Replace(" ", "");
+        using var obd = new ObdService(t); // no Initialize: not CAN
+        obd.LoadEcuInfo();
+        Assert.Equal("JTMP1RFV0MD012345", obd.Vin);
+    }
+
+    [Theory]
+    [InlineData("BUS INIT: ...OK\r41 0C 1A F8\r", false)]
+    [InlineData("BUS INIT: ...ERROR\r", true)]
+    public void BusInitIsAProgressMessageUnlessItFails(string raw, bool isError)
+    {
+        var response = ElmClient.Parse("010C", raw);
+        Assert.Equal(isError, response.HasError);
+        if (!isError) Assert.Equal("410C1AF8", response.HexLines.Single());
+    }
+
+    [Fact]
+    public void ContinuousMonitorsAreReportedForDieselsToo()
+    {
+        // Byte B 0x0F: compression ignition (bit 3) with all three continuous monitors supported and complete.
+        var status = ReadinessDecoder.Decode(new byte[] { 0x00, 0x0F, 0x00, 0x00 }, DateTime.Now);
+        Assert.True(status.CompressionIgnition);
+        Assert.Contains(status.Monitors, m => m.Name == "Misfire" && m.Supported && m.Complete);
+    }
+
+    [Fact]
+    public void SpeedAndAirFlowAreReadEveryCycle()
+    {
+        // They feed the speed dial, trip distance and fuel economy, so they must not be in the slow rotation.
+        Assert.Contains((byte)0x0D, PidCatalog.DashboardPids);
+        Assert.Contains((byte)0x10, PidCatalog.DashboardPids);
+    }
+
     private sealed class SlowVinTransport : IElmTransport
     {
         private string _cmd = "";
