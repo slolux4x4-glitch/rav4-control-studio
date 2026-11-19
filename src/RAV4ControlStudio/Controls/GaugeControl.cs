@@ -53,7 +53,7 @@ public sealed class GaugeControl : FrameworkElement
 
     // Readout layout, as fractions of the radius below the centre.
     private const double UnitBaseline = 0.10; // baseline of the big number
-    private const double UnitTop = 0.14;      // top of the unit text
+    private const double UnitTop = 0.26;      // top of the unit text
     private const double IconTop = 0.42;      // top of the icon
 
     // Arc runs from 225° (lower left) clockwise over the top to -45° (lower right).
