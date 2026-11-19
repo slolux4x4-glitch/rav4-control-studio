@@ -370,6 +370,34 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _ => "Disconnected",
     };
 
+    // Sidebar badge: what the app is talking to right now. Every mode is read-only.
+    private ConnectionMode _sessionMode;
+
+    public string ModeBadgeTitle => State switch
+    {
+        LinkState.Simulated => "Demo Mode",
+        LinkState.Replay => "Log Replay",
+        LinkState.Connected => "Vehicle Mode",
+        LinkState.Connecting => "Connecting…",
+        _ => "Not Connected",
+    };
+
+    public string ModeBadgeDetail => State switch
+    {
+        LinkState.Simulated => "Simulated ECU · Read-only",
+        LinkState.Replay => "Saved log · Read-only",
+        LinkState.Connected => _sessionMode == ConnectionMode.Wifi ? "Wi-Fi adapter · Read-only" : "Serial adapter · Read-only",
+        _ => "Read-only",
+    };
+
+    public Brush ModeBadgeBrush => State switch
+    {
+        LinkState.Connected => _good,
+        LinkState.Simulated or LinkState.Replay => _accent,
+        LinkState.Connecting => _warn,
+        _ => _muted,
+    };
+
     public Brush ConnectionBrush => State switch
     {
         LinkState.Connected or LinkState.Simulated or LinkState.Replay => _good,
@@ -1150,6 +1178,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
             ApplySnapshot(snapshot);
 
+            _sessionMode = mode;
             State = mode == ConnectionMode.Demo ? LinkState.Simulated : mode == ConnectionMode.Replay ? LinkState.Replay : LinkState.Connected;
             Raise(nameof(AdapterId));
             Raise(nameof(ProtocolText));

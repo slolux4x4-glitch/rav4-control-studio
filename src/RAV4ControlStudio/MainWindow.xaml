@@ -31,7 +31,7 @@
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="RAV4 Control Studio" FontSize="26" FontWeight="SemiBold"/>
                         <TextBlock Foreground="#AEB9C5" FontSize="15">
-                            <Run Text="ECU Bench Interface   |   "/><Run Text="{Binding VehicleTitle, Mode=OneWay}"/><Run Text=" (M20A-FKS / CVT)"/>
+                            <Run Text="{Binding VehicleTitle, Mode=OneWay}"/><Run Text=" (M20A-FKS / CVT)"/>
                         </TextBlock>
                     </StackPanel>
                 </StackPanel>
@@ -83,7 +83,7 @@
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                     <Ellipse Width="14" Height="14" Fill="{Binding ConnectionBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <TextBlock Text="{Binding ConnectionText}" FontSize="15" VerticalAlignment="Center"/>
-                    <TextBlock Text="   |   Read-Only (TX Disabled)   |   " FontSize="15" Foreground="#C9D3DD" VerticalAlignment="Center"/>
+                    <TextBlock Text="   |   Read-only   |   " FontSize="15" Foreground="#C9D3DD" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding LinkSpeedText}" FontSize="15" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Image Source="/Assets/icons/st_info.png" Width="18" Height="18" Margin="0,0,10,0"/><TextBlock Text="RAV4 Control Studio v1.0.0 (Concept)" FontSize="15" Foreground="#C9D3DD" VerticalAlignment="Center"/></StackPanel>
@@ -97,13 +97,14 @@
         <Border DockPanel.Dock="Left" Width="228" Background="{StaticResource SidebarBrush}"
                 BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,1,0">
             <DockPanel Margin="8,12,8,10">
+                <!-- Connection badge: follows what the app is talking to (Not connected, Demo, Vehicle, Log replay) -->
                 <Border DockPanel.Dock="Bottom" Margin="2,10,2,0" Padding="10,9" CornerRadius="10"
-                        BorderBrush="{StaticResource GoodBrush}" BorderThickness="1.5" Background="#0E1C17">
+                        BorderBrush="{Binding ModeBadgeBrush}" BorderThickness="1.5" Background="#0D1620">
                     <StackPanel Orientation="Horizontal">
                         <Image Source="/Assets/icons/bench.png" Width="28" Height="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
                         <StackPanel>
-                            <TextBlock Text="Bench Mode" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource GoodBrush}"/>
-                            <TextBlock Text="Read-Only (TX Disabled)" FontSize="12" Foreground="{StaticResource GoodBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="{Binding ModeBadgeTitle}" FontSize="16" FontWeight="SemiBold" Foreground="{Binding ModeBadgeBrush}"/>
+                            <TextBlock Text="{Binding ModeBadgeDetail}" FontSize="12" Foreground="{Binding ModeBadgeBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
