@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Media;
+using Obd2.Core.Elm;
 using Obd2.Core.Obd;
 using RAV4ControlStudio.Services;
 
@@ -227,6 +229,48 @@ public sealed partial class MainViewModel
         OpenParametersFolderCommand = new RelayCommand(OpenParametersFolder);
         ReloadParametersCommand = new RelayCommand(ReloadCustomParameters);
         ClearTrendsCommand = new RelayCommand<TrendItem>(_ => { foreach (var t in TrendItems) t.IsSelected = false; });
+        SaveSessionLogCommand = new RelayCommand(SaveSessionLog);
+    }
+
+    // ===================================================== session log (every command and reply)
+
+    // One trace for the whole run, so a failed connect, the drop-out and the reconnect attempts all end up in one file.
+    private readonly SessionTrace _trace = new();
+
+    public RelayCommand SaveSessionLogCommand { get; private set; } = null!;
+
+    /// <summary>Writes every command sent to the adapter and its exact reply to a text file in the Logs folder.</summary>
+    public void SaveSessionLog()
+    {
+        try
+        {
+            Directory.CreateDirectory(LogsFolder);
+            var path = Path.Combine(LogsFolder, $"session-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+            using (var writer = new StreamWriter(path, false, new UTF8Encoding(false)))
+                WriteSessionLog(writer);
+            Notify($"Session log saved: {path}");
+            using var _ = Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            Notify($"Could not save the session log: {ex.Message}");
+        }
+    }
+
+    internal void WriteSessionLog(TextWriter writer)
+    {
+        writer.WriteLine("RAV4 Control Studio session log");
+        writer.WriteLine($"Saved:       {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        writer.WriteLine($"App:         {typeof(MainViewModel).Assembly.GetName().Version} on {Environment.OSVersion}");
+        writer.WriteLine($"State:       {ConnectionText} ({ModeBadgeTitle})");
+        writer.WriteLine($"Connection:  {SelectedMode}, Wi-Fi {WifiHost}:{WifiPort}, port {SelectedPort?.ToString() ?? "-"}, {SelectedBaud} baud");
+        writer.WriteLine($"Protocol:    {SelectedProtocol?.Label}, poll delay {PollDelayMs} ms");
+        writer.WriteLine($"Adapter:     {AdapterId}");
+        writer.WriteLine();
+        writer.WriteLine("TX = sent to the adapter, RX = its reply exactly as received (\\r = carriage return), !! = timeout or error.");
+        writer.WriteLine("The app only sends read-only requests.");
+        writer.WriteLine();
+        _trace.WriteTo(writer);
     }
 
     // ===================================================== auto-reconnect
@@ -238,6 +282,7 @@ public sealed partial class MainViewModel
     private async Task HandleLinkLostAsync(string reason)
     {
         Notify($"Connection lost: {reason}");
+        _trace.Note($"Connection lost: {reason}");
         await DisconnectAsync();
         if (!_autoReconnect || SelectedMode == ConnectionMode.Replay) return;
 

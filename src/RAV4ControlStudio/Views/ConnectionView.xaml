@@ -156,6 +156,13 @@
                         <TextBlock Grid.Row="1" Text="Protocol" Style="{StaticResource Muted}"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ProtocolText}" TextTrimming="CharacterEllipsis"/>
                         <TextBlock Grid.Row="2" Text="VIN" Style="{StaticResource Muted}"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding VinText}" FontFamily="Consolas"/>
                     </Grid>
+                    <Button Style="{StaticResource ActionButton}" Command="{Binding SaveSessionLogCommand}" HorizontalAlignment="Left" Margin="0,12,0,0"
+                            ToolTip="Save every command sent to the adapter and its exact reply, for troubleshooting">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource IconText}" Text="&#xE9F9;" Margin="0,0,8,0"/>
+                            <TextBlock Text="Save session log" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Border>
 

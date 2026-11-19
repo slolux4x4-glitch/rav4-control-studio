@@ -1139,13 +1139,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         IsBusy = true;
         State = LinkState.Connecting;
-        Notify(mode switch
+        var opening = mode switch
         {
             ConnectionMode.Demo => "Starting simulated ECU…",
             ConnectionMode.Replay => "Opening log replay…",
             ConnectionMode.Wifi => $"Connecting to {host}:{wifiPort}…",
             _ => $"Opening {port} at {baud} baud…",
-        });
+        };
+        Notify(opening);
+        _trace.Note($"{opening} (protocol {protocol}, poll delay {PollDelayMs} ms)");
 
         try
         {
@@ -1189,6 +1191,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             Raise(nameof(ProtocolText));
             Raise(nameof(SupportedPidsText));
 
+            _trace.Note($"Connected: {service.TransportName}, adapter {service.AdapterId}, protocol {service.Protocol}, {supported.Count} supported PIDs");
             StartUiTimer();
             _pollTask = Task.Run(() => PollLoop(service, token));
             Notify(mode == ConnectionMode.Demo
@@ -1199,6 +1202,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             State = LinkState.Error;
             Notify($"Connection failed: {ex.Message}");
+            _trace.Note($"Connection failed: {ex.GetType().Name}: {ex.Message}");
             RestoreModeAfterReplay();
         }
         finally
@@ -1237,6 +1241,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         State = LinkState.Disconnected;
         IsBusy = false;
         Notify("Disconnected.");
+        _trace.Note("Disconnected");
         RestoreModeAfterReplay();
     }
 
@@ -1334,7 +1339,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             transport.Open();
-            service = new ObdService(transport);
+            service = new ObdService(transport, _trace);
             service.Traffic += entry =>
             {
                 _trafficQueue.Enqueue(entry);

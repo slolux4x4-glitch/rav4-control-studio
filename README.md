@@ -48,6 +48,7 @@ Pages that need a live link show a "Not connected" banner with a Connect button.
 **More features**
 - Auto-reconnect if the adapter drops (6 tries); Wi-Fi presets and a **Find adapter** button.
 - Alerts (coolant, battery, rpm) with limits in Settings; a trip summary with estimated fuel economy when you disconnect.
+- **Save session log** (Connection page): every command sent to the adapter and its exact reply, with timing and errors, in one text file for troubleshooting.
 - **Replay** a saved CSV log through the whole app (Data Logging page); PDF and text reports.
 - Several vehicles, each with its own logs, reports and baseline; interface size (90% to 125%).
 - Phone view: a read-only web page on port 8765 with a random code in the address (Settings).

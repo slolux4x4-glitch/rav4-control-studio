@@ -12,9 +12,9 @@ public sealed class ObdService : IDisposable
     private readonly ElmClient _elm;
     private readonly HashSet<byte> _supported = new();
 
-    public ObdService(IElmTransport transport)
+    public ObdService(IElmTransport transport, SessionTrace? trace = null)
     {
-        _elm = new ElmClient(transport);
+        _elm = new ElmClient(transport, trace);
         _elm.Traffic += entry => Traffic?.Invoke(entry);
     }
 

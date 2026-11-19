@@ -44,7 +44,13 @@ public sealed class ElmClient : IDisposable
     private readonly IElmTransport _transport;
     private readonly object _gate = new();
 
-    public ElmClient(IElmTransport transport) => _transport = transport;
+    private readonly SessionTrace? _trace;
+
+    public ElmClient(IElmTransport transport, SessionTrace? trace = null)
+    {
+        _transport = transport;
+        _trace = trace;
+    }
 
     public string TransportName => _transport.DisplayName;
 
@@ -93,17 +99,25 @@ public sealed class ElmClient : IDisposable
             if (_lateReplyPending)
                 DiscardLateReply();
 
-            _transport.WriteLine(command);
+            var clock = _trace is null ? null : System.Diagnostics.Stopwatch.StartNew();
             string raw;
             try
             {
+                _transport.WriteLine(command);
                 raw = _transport.ReadUntilPrompt(timeout);
             }
-            catch (TimeoutException)
+            catch (TimeoutException ex)
             {
                 _lateReplyPending = true;
+                _trace?.Timeout(command, clock!.Elapsed, PartialReply(ex.Message));
                 throw;
             }
+            catch (Exception ex)
+            {
+                _trace?.Failure(command, ex);
+                throw;
+            }
+            _trace?.Exchange(command, raw, clock!.Elapsed);
             _adapterSilent = false;
             var response = Parse(command, raw);
 
@@ -124,13 +138,23 @@ public sealed class ElmClient : IDisposable
         if (_adapterSilent) return; // already waited once and nothing came; don't slow every retry down
         try
         {
-            _transport.ReadUntilPrompt(LateReplyWait);
+            var late = _transport.ReadUntilPrompt(LateReplyWait);
+            _trace?.LateReply(late);
         }
         catch (TimeoutException)
         {
             // The reply never came; carry on with the next command.
             _adapterSilent = true;
+            _trace?.Note($"no late reply within {LateReplyWait.TotalSeconds:0.#} s");
         }
+    }
+
+    // The transports put whatever arrived before the deadline in the message as: Partial reply: "...".
+    private static string? PartialReply(string message)
+    {
+        const string marker = "Partial reply: \"";
+        int i = message.IndexOf(marker, StringComparison.Ordinal);
+        return i < 0 ? null : message[(i + marker.Length)..].TrimEnd('"');
     }
 
     internal static ElmResponse Parse(string command, string raw)

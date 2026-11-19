@@ -22,6 +22,7 @@ Do this in order. Stop at the first step that fails and note what you see.
 10. Create a **Report** from the Reports page.
 
 ## What to send back if something is wrong
+- **OBD2 Connection > Save session log**. Press it straight after the problem (before closing the app). It saves every command sent to the car and the exact reply to `Documents\RAV4 Control Studio\Logs\session-....txt` and shows the file. This is the most useful thing to send.
 - The result list from **Test adapter** (copy it from the screen).
 - **About > Copy details**.
 - The newest file from `Documents\RAV4 Control Studio\Logs` if logging was on.
