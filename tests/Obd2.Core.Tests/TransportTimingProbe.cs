@@ -51,6 +51,47 @@ internal sealed class SlowElm : IDisposable
     public void Dispose() => _listener.Stop();
 }
 
+public class DtcDetailTests
+{
+    [Fact]
+    public void ListEntriesAreLightButFindFillsInTheDetails()
+    {
+        var light = DtcDatabase.Lookup("P0420")!;
+        Assert.Equal("", light.Explanation);
+        Assert.Null(light.Causes);
+
+        var full = DtcDatabase.Find("p0420")!;
+        Assert.Equal(light.Description, full.Description);
+        Assert.NotEmpty(full.Explanation);
+        Assert.NotEmpty(full.Causes!);
+        Assert.NotEmpty(full.Symptoms!);
+        Assert.Contains(full.Causes!, c => c.Contains("likelihood"));
+    }
+
+    [Fact]
+    public void DetailsMatchTheRightCodeAtBothEndsOfTheData()
+    {
+        var first = DtcDatabase.WithDetails(DtcDatabase.Lookup("B0001")!);   // first record in the data
+        Assert.Contains("B0001", first.Explanation);
+
+        var misfire = DtcDatabase.WithDetails(DtcDatabase.Lookup("P0300")!);
+        Assert.Contains("misfire", misfire.Explanation, StringComparison.OrdinalIgnoreCase);
+
+        var last = DtcDatabase.All.Last(e => e.Source == "Generic SAE J2012");
+        Assert.NotEmpty(DtcDatabase.WithDetails(last).Explanation);
+    }
+
+    [Fact]
+    public void OpeningACodeIsQuick()
+    {
+        DtcDatabase.WithDetails(DtcDatabase.Lookup("P0171")!); // first use
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        foreach (var code in new[] { "P0300", "P0128", "U0100", "C0035", "B0001" })
+            DtcDatabase.WithDetails(DtcDatabase.Lookup(code)!);
+        Assert.True(sw.ElapsedMilliseconds / 5 < 150, $"{sw.ElapsedMilliseconds / 5} ms per code");
+    }
+}
+
 public class FormulaLimitTests
 {
     [Fact]

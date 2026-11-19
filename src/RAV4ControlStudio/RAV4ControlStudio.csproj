@@ -22,6 +22,7 @@
     <PackageReference Include="System.Management" Version="9.0.0" />
     <Resource Include="Assets\**\*.png" />
     <Resource Include="Assets/app.ico" />
+    <InternalsVisibleTo Include="RAV4ControlStudio.Tests" />
   </ItemGroup>
 
 </Project>

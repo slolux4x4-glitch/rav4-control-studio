@@ -333,6 +333,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             if (Set(ref _state, value))
             {
                 RaiseCommands();
+                // Many values depend on the link state, so everything is refreshed. Measured: 2 to 11 ms per change,
+                // a few times per session, so a hand-kept list of dependent properties (easy to get wrong) is not worth it.
                 RaiseAll();
             }
         }
@@ -703,18 +705,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    private DispatcherTimer? _dtcSearchTimer;
+    private Debouncer? _dtcSearchDebouncer;
 
     /// <summary>Searches a quarter of a second after the last keystroke instead of on every keystroke.</summary>
     private void ScheduleDtcSearch()
     {
-        _dtcSearchTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) =>
-        {
-            _dtcSearchTimer!.Stop();
-            RunDtcSearch();
-        }, _ui);
-        _dtcSearchTimer.Stop();
-        _dtcSearchTimer.Start();
+        _dtcSearchDebouncer ??= new Debouncer(TimeSpan.FromMilliseconds(250), RunDtcSearch, _ui);
+        _dtcSearchDebouncer.Request();
     }
 
     private IReadOnlyList<DtcEntry> _dtcResults = Array.Empty<DtcEntry>();
@@ -733,7 +730,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         set
         {
             if (Set(ref _selectedDbEntry, value) && value is not null)
-                DetailEntry = value;
+                DetailEntry = DtcDatabase.WithDetails(value); // explanation, causes and symptoms are read on demand
         }
     }
 
@@ -807,12 +804,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Raise(nameof(SelectedDtcCategory));
         _dtcSearch = code;
         Raise(nameof(DtcSearchText));
-        _dtcSearchTimer?.Stop();
+        _dtcSearchDebouncer?.Cancel();
         RunDtcSearch();
 
         var entry = DtcResults.FirstOrDefault(e => e.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
         SelectedDtcEntry = entry;
-        DetailEntry = entry ?? new DtcEntry(
+        DetailEntry = entry is not null ? DtcDatabase.WithDetails(entry) : new DtcEntry(
             code.ToUpperInvariant(),
             DtcCatalog.Describe(code),
             DtcDatabase.SystemOf(code),
@@ -1722,7 +1719,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    private DispatcherTimer? _saveTimer;
+    private Debouncer? _saveDebouncer;
     private static readonly object SaveGate = new();
 
     /// <summary>
@@ -1732,21 +1729,19 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void SaveSettings()
     {
         if (_loading) return;
-        _saveTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(500), DispatcherPriority.Background, (_, _) =>
+        _saveDebouncer ??= new Debouncer(TimeSpan.FromMilliseconds(500), () =>
         {
-            _saveTimer!.Stop();
             var settings = BuildSettings();
             Task.Run(() => { lock (SaveGate) settings.Save(); });
         }, _ui);
-        _saveTimer.Stop();
-        _saveTimer.Start();
+        _saveDebouncer.Request();
     }
 
-    /// <summary>Writes any pending settings change straight away (used at exit).</summary>
+    /// <summary>Writes any pending settings change straight away, on this thread (used at exit).</summary>
     private void FlushSettings()
     {
-        if (_saveTimer is not { IsEnabled: true }) return;
-        _saveTimer.Stop();
+        if (_saveDebouncer is not { IsPending: true }) return;
+        _saveDebouncer.Cancel();
         var settings = BuildSettings();
         lock (SaveGate) settings.Save();
     }

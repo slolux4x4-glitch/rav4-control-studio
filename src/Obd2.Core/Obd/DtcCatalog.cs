@@ -23,7 +23,7 @@ public static class DtcCatalog
 
     public static string Describe(string code)
     {
-        var entry = DtcDatabase.Find(code);
+        var entry = DtcDatabase.Lookup(code); // the title is enough here
         if (entry is not null) return entry.Description;
 
         return code.Length >= 2 && (code[1] == '1' || code[1] == '3')
