@@ -86,7 +86,7 @@
                     <TextBlock Text="   |   Read-only   |   " FontSize="15" Foreground="#C9D3DD" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding LinkSpeedText}" FontSize="15" VerticalAlignment="Center"/>
                 </StackPanel>
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Image Source="/Assets/icons/st_info.png" Width="18" Height="18" Margin="0,0,10,0"/><TextBlock Text="RAV4 Control Studio v1.0.0 (Concept)" FontSize="15" Foreground="#C9D3DD" VerticalAlignment="Center"/></StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Image Source="/Assets/icons/st_info.png" Width="18" Height="18" Margin="0,0,10,0"/><TextBlock Text="RAV4 Control Studio v1.0.0" FontSize="15" Foreground="#C9D3DD" VerticalAlignment="Center"/></StackPanel>
                 <Button DockPanel.Dock="Right" Style="{StaticResource HeaderButton}" Margin="0,0,18,0" Padding="10,2" Command="{Binding ToggleUnitsCommand}" ToolTip="Switch between metric and imperial units"><TextBlock Text="{Binding UnitsShortText}" FontSize="15" Foreground="#C9D3DD"/></Button>
                 <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource MutedBrush}"
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="24,0"/>

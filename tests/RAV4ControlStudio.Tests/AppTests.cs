@@ -164,6 +164,31 @@ public class LogReplayTests
     }
 }
 
+public class ModeBadgeTests
+{
+    [Theory]
+    [InlineData(LinkState.Disconnected, ConnectionMode.Wifi, "Not Connected", "Read-only")]
+    [InlineData(LinkState.Error, ConnectionMode.Serial, "Not Connected", "Read-only")]
+    [InlineData(LinkState.Simulated, ConnectionMode.Demo, "Demo Mode", "Simulated ECU · Read-only")]
+    [InlineData(LinkState.Connected, ConnectionMode.Wifi, "Vehicle Mode", "Wi-Fi adapter · Read-only")]
+    [InlineData(LinkState.Connected, ConnectionMode.Serial, "Vehicle Mode", "Serial adapter · Read-only")]
+    [InlineData(LinkState.Replay, ConnectionMode.Replay, "Log Replay", "Saved log · Read-only")]
+    public void BadgeNamesWhatTheAppIsTalkingTo(LinkState state, ConnectionMode mode, string title, string detail)
+    {
+        var badge = MainViewModel.ModeBadge(state, mode);
+        Assert.Equal(title, badge.Title);
+        Assert.Equal(detail, badge.Detail);
+    }
+
+    [Fact]
+    public void EveryStateSaysReadOnly()
+    {
+        foreach (var state in Enum.GetValues<LinkState>())
+            foreach (var mode in Enum.GetValues<ConnectionMode>())
+                Assert.EndsWith("Read-only", MainViewModel.ModeBadge(state, mode).Detail);
+    }
+}
+
 public class ChartUnitTests
 {
     [Fact]

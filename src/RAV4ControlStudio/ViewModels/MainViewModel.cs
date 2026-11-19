@@ -258,6 +258,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 Raise(nameof(IsSerialMode));
                 Raise(nameof(IsWifiMode));
                 Raise(nameof(IsDemoMode));
+                Raise(nameof(InterfaceLabel));
             }
         }
     }
@@ -373,21 +374,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     // Sidebar badge: what the app is talking to right now. Every mode is read-only.
     private ConnectionMode _sessionMode;
 
-    public string ModeBadgeTitle => State switch
-    {
-        LinkState.Simulated => "Demo Mode",
-        LinkState.Replay => "Log Replay",
-        LinkState.Connected => "Vehicle Mode",
-        LinkState.Connecting => "Connecting…",
-        _ => "Not Connected",
-    };
+    public string ModeBadgeTitle => ModeBadge(State, _sessionMode).Title;
+    public string ModeBadgeDetail => ModeBadge(State, _sessionMode).Detail;
 
-    public string ModeBadgeDetail => State switch
+    internal static (string Title, string Detail) ModeBadge(LinkState state, ConnectionMode session) => state switch
     {
-        LinkState.Simulated => "Simulated ECU · Read-only",
-        LinkState.Replay => "Saved log · Read-only",
-        LinkState.Connected => _sessionMode == ConnectionMode.Wifi ? "Wi-Fi adapter · Read-only" : "Serial adapter · Read-only",
-        _ => "Read-only",
+        LinkState.Simulated => ("Demo Mode", "Simulated ECU · Read-only"),
+        LinkState.Replay => ("Log Replay", "Saved log · Read-only"),
+        LinkState.Connected => ("Vehicle Mode", session == ConnectionMode.Wifi ? "Wi-Fi adapter · Read-only" : "Serial adapter · Read-only"),
+        LinkState.Connecting => ("Connecting…", "Read-only"),
+        _ => ("Not Connected", "Read-only"),
     };
 
     public Brush ModeBadgeBrush => State switch
@@ -415,6 +411,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     };
 
     public string UsbStatusText => IsConnected ? "Connected" : "Not connected";
+
+    /// <summary>Overview label for the link in use (or, when disconnected, the one chosen on the Connection page).</summary>
+    public string InterfaceLabel => (IsConnected ? _sessionMode : _mode) switch
+    {
+        ConnectionMode.Wifi => "Wi-Fi Adapter",
+        ConnectionMode.Demo => "Simulated Adapter",
+        ConnectionMode.Replay => "Log Replay",
+        _ => "Bluetooth / USB Adapter",
+    };
     public Brush UsbStatusBrush => IsConnected ? _good : _muted;
 
     public string CanStatusText => IsConnected

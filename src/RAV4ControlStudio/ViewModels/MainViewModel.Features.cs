@@ -522,7 +522,14 @@ public sealed partial class MainViewModel
             TrendItems.Add(item);
             i++;
         }
+
+        // Start with engine speed, coolant temperature and battery voltage ticked so the graph is not empty.
+        foreach (var pid in DefaultTrendPids)
+            if (_trend.TryGetValue(pid, out var item))
+                item.IsSelected = true;
     }
+
+    internal static readonly byte[] DefaultTrendPids = { 0x0C, 0x05, 0x42 };
 
     private void OnTrendSelectionChanged(TrendItem item)
     {

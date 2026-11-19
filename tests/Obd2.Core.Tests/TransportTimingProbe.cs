@@ -13,9 +13,13 @@ internal sealed class SlowElm : IDisposable
     private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
     private readonly Dictionary<string, (int DelayMs, string Reply)> _replies;
 
-    public SlowElm(Dictionary<string, (int DelayMs, string Reply)> replies)
+    private readonly string _greeting;
+
+    /// <param name="greeting">Sent as soon as a client connects, as some Wi-Fi adapters do (for example "&gt;").</param>
+    public SlowElm(Dictionary<string, (int DelayMs, string Reply)> replies, string greeting = "")
     {
         _replies = replies;
+        _greeting = greeting;
         _listener.Start();
         Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
         Task.Run(Serve);
@@ -29,6 +33,7 @@ internal sealed class SlowElm : IDisposable
         {
             using var client = _listener.AcceptTcpClient();
             using var stream = client.GetStream();
+            if (_greeting.Length > 0) stream.Write(Encoding.ASCII.GetBytes(_greeting));
             var line = new StringBuilder();
             var buffer = new byte[64];
             int read;
@@ -113,6 +118,22 @@ public class FormulaLimitTests
 
 public class TransportTimingProbe
 {
+    [Theory]
+    [InlineData(">")]
+    [InlineData("\r\rELM327 v1.5\r\r>")]
+    public void APromptSentOnConnectIsNotTakenAsTheFirstReply(string greeting)
+    {
+        // Found with a stand-in adapter: the stray prompt answered ATZ, so every later reply came one command late.
+        using var elm = new SlowElm(new() { ["ATZ"] = (0, "ELM327 v1.5"), ["010C"] = (0, "410C1AF8") }, greeting);
+        using var transport = new TcpElmTransport("127.0.0.1", elm.Port);
+        transport.Open();
+
+        transport.WriteLine("ATZ");
+        Assert.Contains("ELM327", transport.ReadUntilPrompt(TimeSpan.FromSeconds(2)));
+        transport.WriteLine("010C");
+        Assert.Contains("410C1AF8", transport.ReadUntilPrompt(TimeSpan.FromSeconds(2)));
+    }
+
     [Fact]
     public void WifiLinkSurvivesSeveralReceiveTimeoutsBeforeTheReply()
     {

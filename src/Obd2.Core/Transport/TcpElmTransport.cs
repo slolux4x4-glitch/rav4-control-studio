@@ -36,6 +36,32 @@ public sealed class TcpElmTransport : IElmTransport
         if (!connected)
             throw new TimeoutException($"No answer from {_host}:{_port} within {_connectTimeout.TotalSeconds:0.#} s. Check the Wi-Fi network and IP address.");
         _stream = _client.GetStream();
+        DiscardGreeting();
+    }
+
+    /// <summary>
+    /// Some Wi-Fi adapters send a banner or a '>' prompt as soon as the connection opens. Left in the buffer it
+    /// would be read as the reply to the first command (ATZ), and every later reply would arrive one command late.
+    /// Anything that arrives before the first command is thrown away.
+    /// </summary>
+    private void DiscardGreeting()
+    {
+        var buffer = new byte[256];
+        var clock = Stopwatch.StartNew();
+        var quietSince = Stopwatch.StartNew();
+        while (clock.ElapsedMilliseconds < 1000 && quietSince.ElapsedMilliseconds < 250)
+        {
+            try
+            {
+                if (_stream!.DataAvailable)
+                {
+                    if (_stream.Read(buffer, 0, buffer.Length) == 0) return;
+                    quietSince.Restart();
+                }
+                else Thread.Sleep(20);
+            }
+            catch (IOException) { return; } // a broken link shows up on the first command instead
+        }
     }
 
     public void WriteLine(string command)
