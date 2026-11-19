@@ -51,6 +51,11 @@ public sealed class GaugeControl : FrameworkElement
     public ImageSource? Icon { get => (ImageSource?)GetValue(IconProperty); set => SetValue(IconProperty, value); }
     public bool UnitBelow { get => (bool)GetValue(UnitBelowProperty); set => SetValue(UnitBelowProperty, value); }
 
+    // Readout layout, as fractions of the radius below the centre.
+    private const double UnitBaseline = 0.10; // baseline of the big number
+    private const double UnitTop = 0.14;      // top of the unit text
+    private const double IconTop = 0.42;      // top of the icon
+
     // Arc runs from 225° (lower left) clockwise over the top to -45° (lower right).
     private const double StartAngle = 225;
     private const double SweepAngle = 270;
@@ -131,14 +136,15 @@ public sealed class GaugeControl : FrameworkElement
 
         string valueText = hasValue ? Value.ToString(ValueFormat, CultureInfo.InvariantCulture) : "--";
         double bigSize = r * (valueText.Length >= 4 ? 0.36 : 0.44);
+        // Fixed positions whatever the number's length: the value sits on a set baseline and the unit and
+        // icon below it always land in the same places, so every dial lines up with its neighbours.
         var big = _labels.Get(valueText, bigSize, valueBrush, dpi, FontWeights.SemiBold);
-        double top = cy - big.Height * 0.66;
-        dc.DrawText(big, new Point(cx - big.Width / 2, top));
+        dc.DrawText(big, new Point(cx - big.Width / 2, cy + r * UnitBaseline - big.Baseline));
 
         if (!string.IsNullOrEmpty(Unit))
         {
             var unit = _labels.Get(Unit, r * 0.165, muted, dpi, FontWeights.Normal);
-            dc.DrawText(unit, new Point(cx - unit.Width / 2, top + big.Height * 0.9));
+            dc.DrawText(unit, new Point(cx - unit.Width / 2, cy + r * UnitTop));
         }
     }
 
@@ -188,8 +194,15 @@ public sealed class GaugeControl : FrameworkElement
 
             if (Icon is not null)
             {
-                double size = r * 0.32;
-                dc.DrawImage(Icon, new Rect(cx - size / 2, cy + r * 0.40, size, size));
+                // Drawn as a mask filled with the unit's grey, so every dial's icon has the same colour
+                // whatever colour the picture itself uses.
+                double size = r * 0.26;
+                var box = new Rect(cx - size / 2, cy + r * IconTop, size, size);
+                var mask = new ImageBrush(Icon) { Stretch = Stretch.Uniform };
+                mask.Freeze();
+                dc.PushOpacityMask(mask);
+                dc.DrawRectangle(_muted ??= (Brush)(TryFindResource("MutedBrush") ?? Brushes.Gray), null, box);
+                dc.Pop();
             }
         }
         group.Freeze();
