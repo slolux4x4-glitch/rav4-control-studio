@@ -48,7 +48,14 @@ public sealed class ObdService : IDisposable
 
         var describe = _elm.SendAt("ATDP");
         Protocol = describe.Lines.FirstOrDefault(l => !l.Equals("OK", StringComparison.OrdinalIgnoreCase)) ?? "Unknown";
+        IsCan = Protocol.Contains("15765", StringComparison.Ordinal) || Protocol.Contains("CAN", StringComparison.OrdinalIgnoreCase);
     }
+
+    /// <summary>
+    /// True on CAN (ISO 15765-4), as on the 2021 RAV4. Fault-code replies on CAN carry a count byte after the
+    /// service byte ("43 01 04 20" = one code, P0420) that the older protocols do not have.
+    /// </summary>
+    public bool IsCan { get; private set; }
 
     /// <summary>Reads the supported PID bitmaps (0100, 0120, 0140, ...) and the VIN.</summary>
     public void LoadEcuInfo()
@@ -58,7 +65,9 @@ public sealed class ObdService : IDisposable
 
         while (block <= 0xE0)
         {
-            var data = ExtractPayload($"01{block:X2}", 0x41, block, 4);
+            // More than one control unit can answer (for example engine and transmission). Combine their lists,
+            // so it does not matter which one replies first.
+            var data = SupportedBitmap(block);
             if (data is null)
                 break;
 
@@ -76,7 +85,9 @@ public sealed class ObdService : IDisposable
             block += 0x20;
         }
 
-        Vin = ReadVin();
+        // The VIN and identity are optional: a slow or missing answer must not stop the connection.
+        try { Vin = ReadVin(); }
+        catch (TimeoutException) { Vin = null; }
 
         try { Identity = ReadIdentity(); }
         catch (Exception ex) when (ex is TimeoutException or InvalidOperationException) { /* identity is optional */ }
@@ -130,9 +141,16 @@ public sealed class ObdService : IDisposable
     private static string AsText(byte[] bytes) =>
         new string(bytes.Where(b => b >= 0x20 && b < 0x7F).Select(b => (char)b).ToArray()).Trim();
 
+    /// <summary>
+    /// How long to wait for a live reading. The adapter itself answers NO DATA within a fraction of a second when
+    /// the car does not reply, so a longer silence means the adapter or the link has stopped; waiting less
+    /// lets a dropped connection be noticed (and reconnected) sooner.
+    /// </summary>
+    public static readonly TimeSpan LiveReadTimeout = TimeSpan.FromSeconds(1.5);
+
     public double? ReadPid(PidDefinition pid)
     {
-        var data = ExtractPayload(pid.PidHex, 0x41, pid.Pid, pid.ByteCount);
+        var data = ExtractPayload(pid.PidHex, 0x41, pid.Pid, pid.ByteCount, LiveReadTimeout);
         return data is null ? null : pid.Decode(data);
     }
 
@@ -278,24 +296,80 @@ public sealed class ObdService : IDisposable
     {
         var response = _elm.SendObd(request, TimeSpan.FromSeconds(6));
         var results = new List<DtcInfo>();
+        if (response.HasError) return results; // NO DATA: nothing stored
 
-        for (int line = 0; line < response.HexLines.Count; line++)
+        // One message per answering control unit. Each starts with the service byte (43/47/4A); on CAN a count
+        // byte follows. The rest is pairs of bytes, one code each; 00 00 is padding.
+        foreach (var message in Messages(response))
         {
-            var hex = response.HexLines[line];
+            int start = message.Length > 0 && message[0] == responseService ? 1 : 0;
+            if (start == 1 && IsCan) start = 2;
 
-            // The first frame starts with the response service byte (43/47). Continuation frames do not.
-            if (line == 0 && hex.StartsWith($"{responseService:X2}", StringComparison.Ordinal))
-                hex = hex[2..];
-
-            var bytes = FromHex(hex);
-            for (int i = 0; i + 1 < bytes.Length; i += 2)
+            for (int i = start; i + 1 < message.Length; i += 2)
             {
-                if (bytes[i] == 0 && bytes[i + 1] == 0) continue; // 0000 is padding
-                results.Add(DtcCatalog.Create(bytes[i], bytes[i + 1], status));
+                if (message[i] == 0 && message[i + 1] == 0) continue;
+                var dtc = DtcCatalog.Create(message[i], message[i + 1], status);
+                if (!results.Any(d => d.Code == dtc.Code)) // two units can report the same code
+                    results.Add(dtc);
             }
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Splits a reply into whole messages. With CAN formatting on, the adapter shows a long (multi-frame) message
+    /// as a length line ("00A" = 10 bytes) followed by numbered frames, whose numbers the parser has already
+    /// removed. Anything else is a single-frame message, one per line (one per answering control unit).
+    /// </summary>
+    internal static List<byte[]> Messages(ElmResponse response)
+    {
+        var messages = new List<byte[]>();
+        List<byte>? current = null;
+        int expected = 0;
+
+        foreach (var line in response.HexLines)
+        {
+            if (line.Length <= 3) // length line of a multi-frame message
+            {
+                current = new List<byte>();
+                expected = Convert.ToInt32(line, 16);
+                messages.Add(Array.Empty<byte>()); // filled in below
+                continue;
+            }
+
+            var bytes = FromHex(line);
+            if (current is not null && current.Count < expected)
+            {
+                current.AddRange(bytes);
+                messages[^1] = current.Take(expected).ToArray();
+                if (current.Count >= expected) current = null;
+            }
+            else
+            {
+                current = null;
+                messages.Add(bytes);
+            }
+        }
+
+        messages.RemoveAll(m => m.Length == 0);
+        return messages;
+    }
+
+    /// <summary>The supported-PID bitmap for one block, combined (OR) across every control unit that answers.</summary>
+    private byte[]? SupportedBitmap(byte block)
+    {
+        var response = _elm.SendObd($"01{block:X2}");
+        if (response.HasError) return null;
+
+        byte[]? combined = null;
+        foreach (var message in Messages(response))
+        {
+            if (message.Length < 6 || message[0] != 0x41 || message[1] != block) continue;
+            combined ??= new byte[4];
+            for (int i = 0; i < 4; i++) combined[i] |= message[2 + i];
+        }
+        return combined;
     }
 
     private string? ReadVin()
@@ -319,9 +393,9 @@ public sealed class ObdService : IDisposable
     /// Finds the reply line that starts with "41 PID" and returns the next <paramref name="byteCount"/> bytes.
     /// Returns null when the ECU reports NO DATA or the reply is too short.
     /// </summary>
-    private byte[]? ExtractPayload(string requestHex, byte responseService, byte pid, int byteCount)
+    private byte[]? ExtractPayload(string requestHex, byte responseService, byte pid, int byteCount, TimeSpan? timeout = null)
     {
-        var response = _elm.SendObd(requestHex);
+        var response = _elm.SendObd(requestHex, timeout);
         if (response.HasError) return null;
 
         string prefix = $"{responseService:X2}{pid:X2}";
@@ -336,7 +410,7 @@ public sealed class ObdService : IDisposable
         return null;
     }
 
-    private static byte[] FromHex(string hex)
+    internal static byte[] FromHex(string hex)
     {
         int length = hex.Length / 2;
         var bytes = new byte[length];

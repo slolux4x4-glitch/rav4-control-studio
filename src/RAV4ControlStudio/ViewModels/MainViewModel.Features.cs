@@ -297,6 +297,7 @@ public sealed partial class MainViewModel
     {
         Notify($"Connection lost: {reason}");
         _trace.Note($"Connection lost: {reason}");
+        bool wasLogging = IsLogging; // disconnecting stops the log; start a new one if the link comes back
         await DisconnectAsync();
         if (!_autoReconnect || SelectedMode == ConnectionMode.Replay) return;
 
@@ -315,7 +316,13 @@ public sealed partial class MainViewModel
                 if (IsConnected || cts.IsCancellationRequested) return;
                 await ConnectAsync();
                 if (cts.IsCancellationRequested) return;
-                if (IsConnected) { Notify("Reconnected."); return; }
+                if (IsConnected)
+                {
+                    if (wasLogging && !IsLogging) ToggleLogging(); // continues in a new CSV file
+                    Notify(wasLogging ? "Reconnected. Logging continues in a new file." : "Reconnected.");
+                    _trace.Note("Reconnected" + (wasLogging ? ", logging resumed" : ""));
+                    return;
+                }
             }
             Notify("Could not reconnect. Check the adapter, then press Connect ECU.");
         }

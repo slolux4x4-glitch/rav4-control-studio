@@ -1388,6 +1388,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var rest = supported.Where(p => !PidCatalog.DashboardPids.Contains(p.Pid)).ToList();
 
         int timeouts = 0;
+        var misses = new Dictionary<byte, int>(); // consecutive "no answer" per PID
         try
         {
             while (!ct.IsCancellationRequested)
@@ -1412,12 +1413,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                     try
                     {
                         var value = obd.ReadPid(def);
-                        if (value.HasValue) readings[def.Pid] = value.Value;
+                        if (value.HasValue)
+                        {
+                            readings[def.Pid] = value.Value;
+                            misses[def.Pid] = 0;
+                        }
+                        else if ((misses[def.Pid] = misses.GetValueOrDefault(def.Pid) + 1) == MissesBeforeBlank)
+                        {
+                            readings[def.Pid] = double.NaN; // stopped answering: show "--" rather than an old value
+                        }
                         timeouts = 0;
                     }
                     catch (TimeoutException)
                     {
-                        if (++timeouts >= 8)
+                        // Each live read waits at most 1.5 s, so a silent adapter is noticed in a few seconds.
+                        if (++timeouts >= TimeoutsBeforeLinkLost)
                             throw new IOException("The adapter stopped responding.");
                     }
                 }
@@ -1449,6 +1459,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             // shutdown in progress
         }
     }
+
+    private const int TimeoutsBeforeLinkLost = 3;
+    private const int MissesBeforeBlank = 3;
 
     // ----- UI-thread updates -----
 

@@ -20,7 +20,14 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Image Source="/Assets/icons/dtc_ok.png" Width="58" Height="58" Margin="0,0,18,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <!-- Green tick when there are no codes; an orange warning sign when there are -->
+                <Grid Width="58" Height="58" Margin="0,0,18,0">
+                    <Image Source="/Assets/icons/dtc_ok.png" RenderOptions.BitmapScalingMode="HighQuality">
+                        <Image.Style><Style TargetType="Image"><Style.Triggers><DataTrigger Binding="{Binding HasDtcs}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Image.Style>
+                    </Image>
+                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="50" Foreground="{StaticResource WarnBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="{Binding HasDtcs, Converter={StaticResource BoolToVis}}"/>
+                </Grid>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding DtcHeadline}" FontSize="26" FontWeight="SemiBold" Foreground="{Binding DtcStateBrush}"/>
                     <TextBlock Text="{Binding DtcSubtext}" Style="{StaticResource Muted}" FontSize="14"/>

@@ -118,6 +118,19 @@ public class FormulaLimitTests
 
 public class TransportTimingProbe
 {
+    [Fact]
+    public void ASilentAdapterIsNoticedWithinTwoSecondsPerLiveRead()
+    {
+        // Live reads used to wait 4 s each, and the app gave up after 8 of them (about 45 s of frozen values).
+        using var elm = new SlowElm(new() { ["010C"] = (5000, "410C1AF8") });
+        var transport = new TcpElmTransport("127.0.0.1", elm.Port);
+        transport.Open();
+        using var obd = new ObdService(transport);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        Assert.Throws<TimeoutException>(() => obd.ReadPid(PidCatalog.Find(0x0C)!));
+        Assert.InRange(clock.Elapsed.TotalSeconds, 1.0, 2.5);
+    }
+
     [Theory]
     [InlineData(">")]
     [InlineData("\r\rELM327 v1.5\r\r>")]

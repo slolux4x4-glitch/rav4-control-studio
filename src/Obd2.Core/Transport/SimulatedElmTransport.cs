@@ -84,10 +84,11 @@ public sealed class SimulatedElmTransport : IElmTransport
             };
         }
 
-        if (cmd == "03") return _faults ? "43042000000000\r" : "43000000000000\r";
-        if (cmd == "07") return _faults ? "47030100000000\r" : "47000000000000\r";
+        // CAN format, as on the RAV4: service byte, count of codes, then two bytes per code.
+        if (cmd == "03") return _faults ? "43010420\r" : "4300\r";
+        if (cmd == "07") return _faults ? "47010301\r" : "4700\r";
         if (cmd == "0902") return VinFrames();
-        if (cmd == "0A") return "4A00000000000000" + "\r";
+        if (cmd == "0A") return "4A00\r";
         if (cmd.Length == 6 && cmd.StartsWith("02", StringComparison.Ordinal) && cmd.EndsWith("00", StringComparison.Ordinal))
         {
             if (!_faults) return "NO DATA\r";

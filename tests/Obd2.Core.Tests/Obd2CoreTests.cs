@@ -30,6 +30,105 @@ internal sealed class ScriptedTransport : IElmTransport
     public void Dispose() { }
 }
 
+public class CanDtcTests
+{
+    private static ObdService CanService(ScriptedTransport t)
+    {
+        t.Replies["ATZ"] = "ELM327 v1.5\r";
+        foreach (var at in new[] { "ATE0", "ATL0", "ATS0", "ATH0", "ATCAF1", "ATSP6" }) t.Replies[at] = "OK\r";
+        t.Replies["ATDP"] = "ISO 15765-4 (CAN 11/500)\r";
+        var obd = new ObdService(t);
+        obd.Initialize(6);
+        Assert.True(obd.IsCan);
+        return obd;
+    }
+
+    [Fact]
+    public void TheCountByteOnCanIsNotReadAsACode()
+    {
+        // Found in review: "43 01 04 20" (one code, P0420) used to come out as P0104.
+        var t = new ScriptedTransport();
+        t.Replies["03"] = "43010420\r";
+        using var obd = CanService(t);
+        Assert.Equal(new[] { "P0420" }, obd.ReadStoredDtcs().Select(d => d.Code).ToArray());
+    }
+
+    [Fact]
+    public void NoCodesOnCanIsEmpty()
+    {
+        var t = new ScriptedTransport();
+        t.Replies["03"] = "4300\r";
+        using var obd = CanService(t);
+        Assert.Empty(obd.ReadStoredDtcs());
+    }
+
+    [Fact]
+    public void AMultiFrameReplyIsJoinedBeforeDecoding()
+    {
+        // Four codes need two CAN frames: a length line (00A = 10 bytes), then numbered frames.
+        var t = new ScriptedTransport();
+        t.Replies["03"] = "00A\r0: 43 04 01 33 04 20\r1: 03 01 C1 00 00 00 00\r";
+        using var obd = CanService(t);
+        Assert.Equal(new[] { "P0133", "P0420", "P0301", "U0100" }, obd.ReadStoredDtcs().Select(d => d.Code).ToArray());
+    }
+
+    [Fact]
+    public void RepliesFromTwoControlUnitsAreBothRead()
+    {
+        var t = new ScriptedTransport();
+        t.Replies["03"] = "43010420\r43010715\r"; // engine P0420, transmission P0715
+        using var obd = CanService(t);
+        Assert.Equal(new[] { "P0420", "P0715" }, obd.ReadStoredDtcs().Select(d => d.Code).ToArray());
+    }
+
+    [Fact]
+    public void NoDataMeansNoCodes()
+    {
+        var t = new ScriptedTransport();
+        t.Replies["03"] = "NO DATA\r";
+        using var obd = CanService(t);
+        Assert.Empty(obd.ReadStoredDtcs());
+    }
+
+    [Fact]
+    public void SupportedPidsFromTwoControlUnitsAreCombined()
+    {
+        // Engine supports 0C (rpm); transmission supports 0D (speed). Either may reply first.
+        var t = new ScriptedTransport();
+        t.Replies["0100"] = "4100 00100000\r4100 00080000\r".Replace(" ", "");
+        t.Replies["0902"] = "NO DATA\r";
+        using var obd = CanService(t);
+        obd.LoadEcuInfo();
+        Assert.Contains((byte)0x0C, obd.SupportedPids);
+        Assert.Contains((byte)0x0D, obd.SupportedPids);
+    }
+
+    [Fact]
+    public void ASlowVinDoesNotStopTheConnection()
+    {
+        var t = new SlowVinTransport();
+        using var obd = new ObdService(t);
+        obd.LoadEcuInfo();
+        Assert.Null(obd.Vin);
+        Assert.Contains((byte)0x0C, obd.SupportedPids);
+    }
+
+    private sealed class SlowVinTransport : IElmTransport
+    {
+        private string _cmd = "";
+        public string DisplayName => "slow VIN";
+        public void Open() { }
+        public void WriteLine(string command) => _cmd = command;
+        public string ReadUntilPrompt(TimeSpan timeout) => _cmd switch
+        {
+            "0100" => "41000010000\r\r".Replace("41000010000", "4100" + "00100000"),
+            "0902" => throw new TimeoutException("No prompt"),
+            _ => "NO DATA\r\r",
+        };
+        public void Dispose() { }
+    }
+}
+
 public class ElmParsingTests
 {
     [Fact]
