@@ -43,11 +43,12 @@ public partial class MainWindow : Window
             ["Reports"] = new ReportsView(),
             ["Settings"] = new SettingsView(),
             ["About"] = new AboutView(),
+            ["SupportedPids"] = new SupportedPidsView(), // hidden: opened from ECU Information
         };
 
         _vm.NavigationRequested += key =>
         {
-            if (key is "Settings" or "About")
+            if (!NavKeys.Contains(key) && _pages.ContainsKey(key)) // pages not in the sidebar
             {
                 NavList.SelectedIndex = -1;
                 _currentKey = key;

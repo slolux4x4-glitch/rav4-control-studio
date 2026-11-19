@@ -187,6 +187,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         ShowHelpCommand = new RelayCommand(ShowHelp);
         ShowDiagnosticsCommand = new RelayCommand(() => NavigationRequested?.Invoke("Diagnostics"));
         ShowSettingsCommand = new RelayCommand(() => NavigationRequested?.Invoke("Settings"));
+        ShowSupportedPidsCommand = new RelayCommand(() => NavigationRequested?.Invoke("SupportedPids"));
+        ShowEcuInfoCommand = new RelayCommand(() => NavigationRequested?.Invoke("ECU"));
         ShowAboutCommand = new RelayCommand(() =>
         {
             RefreshAbout();
@@ -235,6 +237,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public RelayCommand ShowHelpCommand { get; }
     public RelayCommand ShowDiagnosticsCommand { get; }
     public RelayCommand ShowSettingsCommand { get; }
+    public RelayCommand ShowSupportedPidsCommand { get; }
+    public RelayCommand ShowEcuInfoCommand { get; }
     public RelayCommand ShowAboutCommand { get; }
     public RelayCommand CopyAboutCommand { get; }
     public RelayCommand RunAdapterTestCommand { get; }
