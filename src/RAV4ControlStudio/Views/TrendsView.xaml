@@ -21,12 +21,12 @@
             <Border Grid.Column="1" Style="{StaticResource Card}">
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="0" Padding="12,5" FontSize="13"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Margin="0"
                                 Command="{Binding ClearTrendsCommand}" Content="Clear"/>
-                        <TextBlock Text="Parameters" Style="{StaticResource CardTitle}" Margin="0"/>
+                        <TextBlock Text="Parameters" Style="{StaticResource CardTitle}" Margin="0" VerticalAlignment="Center"/>
                     </DockPanel>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding TrendItems}">
+                        <ItemsControl ItemsSource="{Binding TrendItems}" Margin="0,0,16,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Margin="0,3">

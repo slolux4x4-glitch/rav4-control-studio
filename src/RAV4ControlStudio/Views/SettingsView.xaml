@@ -80,7 +80,7 @@
                             <ComboBox ItemsSource="{Binding Vehicles}" SelectedItem="{Binding SelectedVehicle}"/>
                             <TextBlock Text="Add a vehicle" Style="{StaticResource Lbl}"/>
                             <DockPanel>
-                                <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="8,0,0,0" Padding="16,7" FontSize="14" Command="{Binding AddVehicleCommand}" Content="Add"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="8,0,0,0" Command="{Binding AddVehicleCommand}" Content="Add"/>
                                 <TextBox Padding="8,7" Text="{Binding NewVehicleName, UpdateSourceTrigger=PropertyChanged}"/>
                             </DockPanel>
                             <TextBlock Style="{StaticResource Muted}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap">
@@ -104,11 +104,11 @@
                             <TextBlock Text="Files and parameters" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
                             <TextBlock Text="{Binding AppFolderText}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10"/>
                             <WrapPanel>
-                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Padding="14,8" FontSize="14" Command="{Binding OpenProjectsCommand}" Content="Open data folder"/>
-                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Padding="14,8" FontSize="14" Command="{Binding OpenLogsFolderCommand}" Content="Logs"/>
-                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Padding="14,8" FontSize="14" Command="{Binding OpenReportsFolderCommand}" Content="Reports"/>
-                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Padding="14,8" FontSize="14" Command="{Binding OpenParametersFolderCommand}" Content="Custom parameters..."/>
-                                <Button Style="{StaticResource ActionButton}" Margin="0,0,0,8" Padding="14,8" FontSize="14" Command="{Binding ReloadParametersCommand}" Content="Reload parameters"/>
+                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Command="{Binding OpenProjectsCommand}" Content="Open data folder"/>
+                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Command="{Binding OpenLogsFolderCommand}" Content="Logs"/>
+                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Command="{Binding OpenReportsFolderCommand}" Content="Reports"/>
+                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Command="{Binding OpenParametersFolderCommand}" Content="Custom parameters..."/>
+                                <Button Style="{StaticResource ActionButton}" Margin="0,0,0,8" Command="{Binding ReloadParametersCommand}" Content="Reload parameters"/>
                             </WrapPanel>
                             <TextBlock Text="{Binding CustomParameterStatus}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap"/>
                         </StackPanel>

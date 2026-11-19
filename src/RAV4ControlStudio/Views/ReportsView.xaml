@@ -22,19 +22,22 @@
                     and the most recent value of every live parameter.
                 </TextBlock>
 
-                <Button Style="{StaticResource ActionButton}" Command="{Binding CreateReportCommand}"
-                        HorizontalAlignment="Left" Margin="0,18,0,0" Width="220">
+                <Button Style="{StaticResource LargeButton}" Command="{Binding CreateReportCommand}"
+                        HorizontalAlignment="Left" Margin="0,18,0,10" Width="240">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource IconText}" Text="&#xE8A5;" Margin="0,0,10,0"/>
-                        <TextBlock Text="Create Report" VerticalAlignment="Center"/>
+                        <TextBlock Text="Create text report" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource ActionButton}" Command="{Binding CreatePdfReportCommand}"
-                        HorizontalAlignment="Left" Width="220">
-                    <TextBlock Text="Create PDF report" VerticalAlignment="Center"/>
+                <Button Style="{StaticResource LargeButton}" Command="{Binding CreatePdfReportCommand}"
+                        HorizontalAlignment="Left" Margin="0,0,0,10" Width="240">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource IconText}" Text="&#xEA90;" Margin="0,0,10,0"/>
+                        <TextBlock Text="Create PDF report" VerticalAlignment="Center"/>
+                    </StackPanel>
                 </Button>
-                <Button Style="{StaticResource ActionButton}" Command="{Binding OpenReportsFolderCommand}"
-                        HorizontalAlignment="Left" Width="220">
+                <Button Style="{StaticResource LargeButton}" Command="{Binding OpenReportsFolderCommand}"
+                        HorizontalAlignment="Left" Margin="0" Width="240">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource IconText}" Text="&#xE8B7;" Margin="0,0,10,0"/>
                         <TextBlock Text="Open reports folder" VerticalAlignment="Center"/>

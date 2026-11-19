@@ -10,7 +10,7 @@
         </Grid.RowDefinitions>
 
         <DockPanel Margin="8,4,8,6">
-            <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="0" Padding="16,9" FontSize="15"
+            <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="0"
                     Command="{Binding ToggleUnitsCommand}" Content="{Binding UnitsButtonText}"/>
             <c:PageHeader Margin="0" Title="Metrics" Subtitle="Speed, engine speed, coolant (water) temperature and battery voltage, live from the ECU."/>
         </DockPanel>

@@ -91,7 +91,7 @@
                 <!-- Wi-Fi -->
                 <StackPanel Visibility="{Binding IsWifiMode, Converter={StaticResource BoolToVis}}">
                     <DockPanel Margin="0,0,0,2">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="8,0,0,0" Padding="16,7" FontSize="14"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="8,0,0,0"
                                 Command="{Binding FindAdapterCommand}" Content="Find adapter"/>
                         <ComboBox ItemsSource="{Binding WifiPresets}" SelectedItem="{Binding SelectedPreset}"/>
                     </DockPanel>
@@ -125,13 +125,13 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
-                    <Button Style="{StaticResource ActionButton}" Command="{Binding ConnectCommand}" Width="190">
+                    <Button Style="{StaticResource LargeButton}" Command="{Binding ConnectCommand}" Width="190" Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource IconText}" Text="&#xE768;" Margin="0,0,10,0"/>
                             <TextBlock Text="Connect ECU" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    <Button Style="{StaticResource ActionButton}" Command="{Binding DisconnectCommand}" Width="190">
+                    <Button Style="{StaticResource LargeButton}" Command="{Binding DisconnectCommand}" Width="190" Margin="0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource IconText}" Text="&#xE71A;" Margin="0,0,10,0"/>
                             <TextBlock Text="Disconnect" VerticalAlignment="Center"/>
@@ -162,7 +162,7 @@
             <Border Grid.Row="1" Style="{StaticResource Card}">
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="0" Padding="16,8" FontSize="15"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="0"
                                 Command="{Binding RunAdapterTestCommand}" Content="Test adapter"/>
                         <TextBlock Text="Adapter test" Style="{StaticResource CardTitle}" Margin="0" VerticalAlignment="Center"/>
                     </DockPanel>

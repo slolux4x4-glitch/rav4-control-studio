@@ -10,8 +10,8 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,0" Padding="22,10" FontSize="15" Command="{Binding ScanEcusCommand}" Content="Scan for ECUs"/>
-                <Button Grid.Column="1" Style="{StaticResource ActionButton}" Margin="0,0,16,0" Padding="18,10" FontSize="15" Command="{Binding CancelScanCommand}" Content="Cancel"/>
+                <Button Style="{StaticResource LargeButton}" Margin="0,0,8,0" Command="{Binding ScanEcusCommand}" Content="Scan for ECUs"/>
+                <Button Grid.Column="1" Style="{StaticResource LargeButton}" Margin="0,0,16,0" Command="{Binding CancelScanCommand}" Content="Cancel"/>
                 <CheckBox Grid.Column="2" VerticalAlignment="Center" FontSize="14" IsChecked="{Binding ScanFull}" Content="Full scan (0x700 to 0x7EF, slower)"/>
                 <TextBlock Grid.Column="3" Text="{Binding ScanStatus}" Foreground="#9AA8B6" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap" Margin="16,0,0,0"/>
             </Grid>

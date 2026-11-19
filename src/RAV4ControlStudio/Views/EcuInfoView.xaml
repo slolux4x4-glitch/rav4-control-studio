@@ -15,7 +15,7 @@
                 <StackPanel>
                     <DockPanel Margin="0,0,0,8">
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left"><Image Source="/Assets/icons/st_ecu.png" Width="26" Height="26" Margin="0,0,10,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Vehicle" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
-                        <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Style="{StaticResource ActionButton}" Margin="0" Padding="12,7" Command="{Binding CopyVinCommand}" Content="Copy VIN"/>
+                        <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Style="{StaticResource SmallButton}" Margin="0" Command="{Binding CopyVinCommand}" Content="Copy VIN"/>
                     </DockPanel>
                     <Border Height="110" CornerRadius="8" ClipToBounds="True" Background="#080E15" Margin="0,0,0,10">
                         <Image Source="/Assets/car.png" Stretch="Uniform" HorizontalAlignment="Right" RenderOptions.BitmapScalingMode="HighQuality"/>

@@ -92,7 +92,7 @@
                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel HorizontalAlignment="Center"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Style="{StaticResource ActionButton}" Margin="4,2" Padding="14,6" FontSize="16" Foreground="{StaticResource WarnBrush}"
+                                <Button Style="{StaticResource SmallButton}" Margin="4,2" Foreground="{StaticResource WarnBrush}"
                                         Content="{Binding Code}" ToolTip="{Binding Description}"
                                         Command="{Binding DataContext.OpenDtcCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"/>
@@ -135,10 +135,10 @@
         </Border>
 
         <UniformGrid Grid.Row="3" Grid.ColumnSpan="2" Columns="4" Margin="0,2,0,0">
-            <Button Style="{StaticResource ActionButton}" Command="{Binding ConnectCommand}" Padding="16,12"><StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_play.png" Width="30" Height="30" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Connect ECU" FontSize="17" VerticalAlignment="Center"/></StackPanel></Button>
-            <Button Style="{StaticResource ActionButton}" Command="{Binding DisconnectCommand}" Padding="16,12"><StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_stop.png" Width="26" Height="26" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Disconnect" FontSize="17" VerticalAlignment="Center"/></StackPanel></Button>
-            <Button Style="{StaticResource ActionButton}" Command="{Binding ToggleLoggingCommand}" Padding="16,12"><StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_log.png" Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="{Binding LoggingButtonText}" FontSize="17" VerticalAlignment="Center"/></StackPanel></Button>
-            <Button Style="{StaticResource ActionButton}" Command="{Binding CreateReportCommand}" Padding="16,12"><StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_report.png" Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Create Report" FontSize="17" VerticalAlignment="Center"/></StackPanel></Button>
+            <Button Style="{StaticResource LargeButton}" Command="{Binding ConnectCommand}"><StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_play.png" Width="30" Height="30" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Connect ECU" FontSize="17" VerticalAlignment="Center"/></StackPanel></Button>
+            <Button Style="{StaticResource LargeButton}" Command="{Binding DisconnectCommand}"><StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_stop.png" Width="26" Height="26" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Disconnect" FontSize="17" VerticalAlignment="Center"/></StackPanel></Button>
+            <Button Style="{StaticResource LargeButton}" Command="{Binding ToggleLoggingCommand}"><StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_log.png" Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="{Binding LoggingButtonText}" FontSize="17" VerticalAlignment="Center"/></StackPanel></Button>
+            <Button Style="{StaticResource LargeButton}" Command="{Binding CreateReportCommand}"><StackPanel Orientation="Horizontal"><Image Source="/Assets/icons/btn_report.png" Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Create Report" FontSize="17" VerticalAlignment="Center"/></StackPanel></Button>
         </UniformGrid>
     </Grid>
 </UserControl>

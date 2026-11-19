@@ -6,8 +6,8 @@
         <c:PageHeader DockPanel.Dock="Top" Title="Live Data" Subtitle="Every Mode 01 parameter the ECU reports. Dashboard values refresh each cycle; the rest rotate."/>
 
         <DockPanel DockPanel.Dock="Top" Margin="8,0,8,8">
-            <Button DockPanel.Dock="Left" Style="{StaticResource ActionButton}" Margin="0,0,8,0" Padding="14,7" FontSize="14" Command="{Binding SaveBaselineCommand}" Content="Save baseline"/>
-            <Button DockPanel.Dock="Left" Style="{StaticResource ActionButton}" Margin="0,0,14,0" Padding="14,7" FontSize="14" Command="{Binding ClearBaselineCommand}" Content="Clear"/>
+            <Button DockPanel.Dock="Left" Style="{StaticResource ActionButton}" Margin="0,0,8,0" Command="{Binding SaveBaselineCommand}" Content="Save baseline"/>
+            <Button DockPanel.Dock="Left" Style="{StaticResource ActionButton}" Margin="0,0,14,0" Command="{Binding ClearBaselineCommand}" Content="Clear"/>
             <TextBlock Text="{Binding BaselineInfo}" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
         </DockPanel>
 

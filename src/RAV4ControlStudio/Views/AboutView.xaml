@@ -50,8 +50,8 @@
                                Text="Read-only OBD-II diagnostics for the 2021 Toyota RAV4. Connects to an ELM327 adapter over Bluetooth, USB or Wi-Fi, or runs a built-in simulator."/>
                 </StackPanel>
                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                    <Button Style="{StaticResource ActionButton}" Margin="0,0,0,6" Padding="18,8" FontSize="14" Command="{Binding CopyAboutCommand}" Content="Copy details"/>
-                    <Button Style="{StaticResource ActionButton}" Margin="0" Padding="18,8" FontSize="14" Command="{Binding OpenProjectsCommand}" Content="Open data folder"/>
+                    <Button Style="{StaticResource ActionButton}" Margin="0,0,0,6" Command="{Binding CopyAboutCommand}" Content="Copy details"/>
+                    <Button Style="{StaticResource ActionButton}" Margin="0" Command="{Binding OpenProjectsCommand}" Content="Open data folder"/>
                 </StackPanel>
             </Grid>
         </Border>

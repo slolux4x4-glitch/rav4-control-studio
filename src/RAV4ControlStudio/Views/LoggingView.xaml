@@ -35,13 +35,13 @@
                 </Border>
 
                 <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
-                    <Button Style="{StaticResource ActionButton}" Command="{Binding ToggleLoggingCommand}" Width="200">
+                    <Button Style="{StaticResource LargeButton}" Command="{Binding ToggleLoggingCommand}" Width="200" Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource IconText}" Text="&#xE9D2;" Margin="0,0,10,0"/>
                             <TextBlock Text="{Binding LoggingButtonText}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    <Button Style="{StaticResource ActionButton}" Command="{Binding OpenLogsFolderCommand}">
+                    <Button Style="{StaticResource LargeButton}" Command="{Binding OpenLogsFolderCommand}" Margin="0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource IconText}" Text="&#xE8B7;" Margin="0,0,10,0"/>
                             <TextBlock Text="Open logs folder" VerticalAlignment="Center"/>
@@ -58,10 +58,10 @@
 
         <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}">
             <DockPanel>
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
-                    <TextBlock Text="Saved logs" Style="{StaticResource CardTitle}" Margin="0" DockPanel.Dock="Left"/>
-                    <Button Style="{StaticResource ActionButton}" Command="{Binding ReplayLogCommand}" DockPanel.Dock="Right" Padding="12,7" Margin="6,6,0,6" ToolTip="Play the selected log through the gauges and graphs, as if connected"><TextBlock Text="Replay" VerticalAlignment="Center"/></Button>
-                    <Button Style="{StaticResource ActionButton}" Command="{Binding OpenLogFileCommand}" DockPanel.Dock="Right" Padding="12,7">
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12" LastChildFill="False">
+                    <TextBlock Text="Saved logs" Style="{StaticResource CardTitle}" Margin="0" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                    <Button Style="{StaticResource SmallButton}" Command="{Binding ReplayLogCommand}" DockPanel.Dock="Right" Margin="8,0,0,0" ToolTip="Play the selected log through the gauges and graphs, as if connected"><TextBlock Text="Replay" VerticalAlignment="Center"/></Button>
+                    <Button Style="{StaticResource SmallButton}" Command="{Binding OpenLogFileCommand}" DockPanel.Dock="Right" Margin="0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource IconText}" Text="&#xE8E5;" Margin="0,0,8,0"/>
                             <TextBlock Text="Open selected" VerticalAlignment="Center"/>
