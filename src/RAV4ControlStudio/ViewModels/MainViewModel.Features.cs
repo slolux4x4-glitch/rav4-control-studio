@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Windows;
 using System.Windows.Media;
 using Obd2.Core.Elm;
 using Obd2.Core.Obd;
@@ -230,21 +231,59 @@ public sealed partial class MainViewModel
         ReloadParametersCommand = new RelayCommand(ReloadCustomParameters);
         ClearTrendsCommand = new RelayCommand<TrendItem>(_ => { foreach (var t in TrendItems) t.IsSelected = false; });
         SaveSessionLogCommand = new RelayCommand(SaveSessionLog);
-        ClearCodesCommand = new RelayCommand(() => Notify(ClearCodesNote), () => ClearCodesEnabled);
+        ClearCodesCommand = new RelayCommand(() => Fire(ClearCodesAsync()), CanClearCodes);
     }
 
-    // ===================================================== clear codes (future, disabled)
+    // ===================================================== clear codes (written, switched off)
 
     /// <summary>
-    /// Placeholder for a possible future "clear codes" feature. Disabled until there are instructions to build
-    /// it. It does not, and cannot, send anything to the car: the clear request (service 04) is not on
-    /// ElmClient's read-only allowlist, and the button only shows this note.
+    /// App switch for the Clear codes button. OFF: the button stays greyed out and the flow below never runs.
+    /// It is one of two switches; the other (Obd2.Core ElmClient.ClearCodesEnabled) must also be on before
+    /// anything can be sent. Turn both on only on the owner's explicit instruction.
     /// </summary>
     internal const bool ClearCodesEnabled = false;
 
-    public string ClearCodesNote => "Clearing codes is not available. This app is read-only; clearing may come in a future version.";
+    public string ClearCodesNote => ClearCodesEnabled
+        ? "Clear stored and pending fault codes. Engine off, ignition on. This also resets the readiness monitors."
+        : "Clearing codes is not available yet. This app is read-only for now.";
 
     public RelayCommand ClearCodesCommand { get; private set; } = null!;
+
+    // Only with a real car (not the demo or a log replay), connected, and nothing else using the adapter.
+    private bool CanClearCodes() =>
+        ClearCodesEnabled && State == LinkState.Connected && _obd is not null && !IsBusy && !IsScanning;
+
+    /// <summary>Warns, asks for confirmation, clears, then re-reads the codes so the page shows the result.</summary>
+    private async Task ClearCodesAsync()
+    {
+        var obd = _obd;
+        if (!CanClearCodes() || obd is null) { Notify(ClearCodesNote); return; }
+
+        var codes = string.Join(", ", StoredDtcs.Concat(PendingDtcs).Select(d => d.Code).Distinct());
+        var answer = MessageBox.Show(
+            "Clear the fault codes in the engine ECU?\n\n" +
+            (codes.Length > 0 ? $"Codes now: {codes}\n\n" : "") +
+            "This erases stored and pending codes and the freeze frame, turns off the check-engine light, and " +
+            "resets the readiness monitors. The car may then fail an emissions inspection until it has been " +
+            "driven for a few days. It does not fix the fault: if it is still there, the code will come back.\n\n" +
+            "The engine must be off with the ignition on.",
+            "Clear fault codes", MessageBoxButton.OKCancel, MessageBoxImage.Warning, MessageBoxResult.Cancel);
+        if (answer != MessageBoxResult.OK) { Notify("Clear codes cancelled."); return; }
+
+        _trace.Note($"Clear codes requested (codes: {(codes.Length > 0 ? codes : "none")})");
+        try
+        {
+            var result = await Task.Run(obd.ClearCodes);
+            _trace.Note("Clear codes: " + result.Message);
+            Notify(result.Message);
+            await RefreshDiagnosticsAsync();
+        }
+        catch (Exception ex) when (ex is TimeoutException or IOException or InvalidOperationException)
+        {
+            _trace.Note("Clear codes failed: " + ex.Message);
+            Notify("Could not clear codes: " + ex.Message);
+        }
+    }
 
     // ===================================================== session log (every command and reply)
 

@@ -210,6 +210,29 @@ public sealed class ObdService : IDisposable
         return data is null ? null : ReadinessDecoder.Decode(data, DateTime.Now);
     }
 
+    // ----- Clear codes (written but switched off; see ElmClient.ClearCodesEnabled) -----
+
+    /// <summary>
+    /// Clears stored and pending codes (service 04), then reads the codes again to confirm. Refuses while the
+    /// engine is running, as the standard requires. Throws InvalidOperationException while clearing is switched off.
+    /// </summary>
+    public ClearCodesResult ClearCodes()
+    {
+        var rpm = ReadPid(PidCatalog.Find(0x0C)!);
+        if (rpm is > 0)
+            return new ClearCodesResult(false, "The engine is running. Switch it off, leave the ignition on, then try again.", ReadStoredDtcs());
+
+        var reply = _elm.Exclusive(() => _elm.SendClearCodes());
+        bool accepted = !reply.HasError && reply.HexLines.Any(l => l.StartsWith("44", StringComparison.Ordinal));
+        if (!accepted)
+            return new ClearCodesResult(false, "The ECU did not accept the request" + (reply.HasError ? $": {reply.Error}." : "."), ReadStoredDtcs());
+
+        var remaining = ReadStoredDtcs();
+        return remaining.Count == 0
+            ? new ClearCodesResult(true, "Codes cleared. Readiness monitors are reset and need a few drive cycles to complete.", remaining)
+            : new ClearCodesResult(false, $"The ECU accepted the request, but {remaining.Count} code(s) are still stored: the fault is probably still present.", remaining);
+    }
+
     // ----- Custom parameters (user-defined, read-only) -----
 
     /// <summary>Reads a custom Mode 01 or Mode 22 parameter. Returns null when the ECU does not answer.</summary>

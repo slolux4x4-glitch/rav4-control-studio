@@ -81,6 +81,24 @@ public sealed class ElmClient : IDisposable
     }
 
     /// <summary>
+    /// Master switch for clearing fault codes (OBD-II service 04). OFF: <see cref="SendClearCodes"/> refuses before
+    /// anything is sent. Nothing in the app turns it on; only tests do, against fake adapters. Service 04 is
+    /// deliberately not on the read-only allowlist, so <see cref="SendObd"/> refuses it whatever this says.
+    /// </summary>
+    internal static bool ClearCodesEnabled { get; set; }
+
+    /// <summary>
+    /// Sends service 04 (clear diagnostic information). This is the only path in the app that can change anything
+    /// in the car: it erases stored and pending codes, freeze frames and readiness results.
+    /// </summary>
+    public ElmResponse SendClearCodes()
+    {
+        if (!ClearCodesEnabled)
+            throw new InvalidOperationException("Clearing codes is disabled in this version of the app.");
+        return Send("04", TimeSpan.FromSeconds(10));
+    }
+
+    /// <summary>
     /// Runs several commands as one uninterrupted sequence, for example "point at another ECU, read, point back".
     /// Other threads' commands wait until the sequence ends, so they can never be sent to the wrong ECU.
     /// </summary>

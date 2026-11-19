@@ -52,6 +52,9 @@ public sealed record FreezeValue(string Name, string Unit, double Value, string 
 /// <summary>Snapshot of sensor values stored by the ECU when a fault code was set (Mode 02, frame 0).</summary>
 public sealed record FreezeFrameData(string Dtc, IReadOnlyList<FreezeValue> Values);
 
+/// <summary>Outcome of a clear-codes request: whether it worked, a plain explanation, and the codes still stored.</summary>
+public sealed record ClearCodesResult(bool Cleared, string Message, IReadOnlyList<DtcInfo> Remaining);
+
 /// <summary>An ECU that answered the discovery scan, with the identification fields it reported.</summary>
 public sealed record EcuNode(int RequestId, int ResponseId, IReadOnlyDictionary<string, string> Fields)
 {
