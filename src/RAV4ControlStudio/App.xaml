@@ -7,6 +7,46 @@
 
       <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
+      <!-- Gauge icons as vector line drawings on a 24x24 grid, so they stay sharp at any size (full screen included).
+           The clear square fixes the drawing's bounds so every icon keeps the same padding. -->
+      <Pen x:Key="IconPen" Brush="#DCE4EC" Thickness="1.7" StartLineCap="Round" EndLineCap="Round" LineJoin="Round"/>
+      <DrawingImage x:Key="IconSpeed">
+        <DrawingImage.Drawing>
+          <DrawingGroup>
+            <GeometryDrawing Brush="Transparent" Geometry="M0,0 H24 V24 H0 Z"/>
+            <GeometryDrawing Pen="{StaticResource IconPen}"
+                             Geometry="M12,3 A9,9 0 1 1 11.99,3 Z M3,12 H9.6 M14.4,12 H21 M12,14.4 V21 M12,9.6 A2.4,2.4 0 1 1 11.99,9.6 Z"/>
+          </DrawingGroup>
+        </DrawingImage.Drawing>
+      </DrawingImage>
+      <DrawingImage x:Key="IconEngine">
+        <DrawingImage.Drawing>
+          <DrawingGroup>
+            <GeometryDrawing Brush="Transparent" Geometry="M0,0 H24 V24 H0 Z"/>
+            <GeometryDrawing Pen="{StaticResource IconPen}"
+                             Geometry="M9.5,5 H14.5 M12,5 V7.5 M6,9.5 L8,7.5 H15 L16.5,9.5 H18.5 V11.5 H21 V9 M21,9 V17 M21,15 H18.5 V17 L16.5,18.5 H9 L7,16.5 H6 Z M6,11 H3 M3,9 V15"/>
+          </DrawingGroup>
+        </DrawingImage.Drawing>
+      </DrawingImage>
+      <DrawingImage x:Key="IconCoolant">
+        <DrawingImage.Drawing>
+          <DrawingGroup>
+            <GeometryDrawing Brush="Transparent" Geometry="M0,0 H24 V24 H0 Z"/>
+            <GeometryDrawing Pen="{StaticResource IconPen}"
+                             Geometry="M10.8,3.5 A1.2,1.2 0 0 1 13.2,3.5 V12.2 A2.6,2.6 0 1 1 10.8,12.2 Z M13.2,5 H16 M13.2,7.5 H16 M13.2,10 H15 M3,18.5 Q4.5,17 6,18.5 T9,18.5 T12,18.5 T15,18.5 T18,18.5 T21,18.5 M3,21.5 Q4.5,20 6,21.5 T9,21.5 T12,21.5 T15,21.5 T18,21.5 T21,21.5"/>
+          </DrawingGroup>
+        </DrawingImage.Drawing>
+      </DrawingImage>
+      <DrawingImage x:Key="IconBattery">
+        <DrawingImage.Drawing>
+          <DrawingGroup>
+            <GeometryDrawing Brush="Transparent" Geometry="M0,0 H24 V24 H0 Z"/>
+            <GeometryDrawing Pen="{StaticResource IconPen}"
+                             Geometry="M3,7.5 H21 V19 H3 Z M5.5,7.5 V5.5 H9 V7.5 M15,7.5 V5.5 H18.5 V7.5 M6,13 H9 M15,13 H18 M16.5,11.5 V14.5"/>
+          </DrawingGroup>
+        </DrawingImage.Drawing>
+      </DrawingImage>
+
       <!-- Palette (taken from the RAV4 Control Studio concept) -->
       <SolidColorBrush x:Key="BgBrush" Color="#070D14"/>
       <SolidColorBrush x:Key="SidebarBrush" Color="#111D29"/>
