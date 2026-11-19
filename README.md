@@ -13,11 +13,15 @@ Run **`dist\RAV4ControlStudio\RAV4ControlStudio.exe`**. It is self-contained, so
 dotnet publish src/RAV4ControlStudio/RAV4ControlStudio.csproj -c Release -r win-x64 --self-contained true -p:DebugType=none -o dist/RAV4ControlStudio
 ```
 
-Run tests:
+Run all tests (core and app):
 
 ```bash
-dotnet test tests/Obd2.Core.Tests
+dotnet test RAV4ControlStudio.slnx
 ```
+
+GitHub Actions runs the same build and tests on every push (`.github/workflows/ci.yml`).
+
+For everyday use see the [user guide](USER-GUIDE.md); for the first real-car session see [FIRST-CAR-TEST.md](FIRST-CAR-TEST.md).
 
 ## Pages
 
@@ -79,7 +83,8 @@ Only OBD-II services 01 (live data), 02 (freeze frame), 03/07/0A (read codes), 0
 ```
 src/Obd2.Core/              ELM327 transports (Bluetooth/USB serial, Wi-Fi TCP, simulator), OBD-II services, decoders
 src/RAV4ControlStudio/      WPF app: MainWindow, Views/, ViewModels/, Controls/ (gauge, graph), Services/
-tests/Obd2.Core.Tests/      xUnit tests
+tests/Obd2.Core.Tests/      xUnit tests for the core (protocol, decoders, timing, code database)
+tests/RAV4ControlStudio.Tests/  xUnit tests for the app (debouncer, phone view, log replay, charts)
 dist/RAV4ControlStudio/     Published, self-contained app (run RAV4ControlStudio.exe)
 ```
 
