@@ -103,9 +103,9 @@
 
         <!-- Code database -->
         <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}">
-            <Grid>
             <DockPanel>
-                <!-- Title on its own line; the view switch on the left and the code-list tools on the right below it -->
+                <!-- Title on its own line; the view switch on the left and the code-list tools on the right below it.
+                     These stay above the area that switches between the database and the freeze frame. -->
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10"><Image Source="/Assets/icons/sec_can.png" Width="26" Height="26" Margin="0,0,10,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="Trouble Code Database" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8" LastChildFill="False">
                     <RadioButton DockPanel.Dock="Left" GroupName="DiagTab" Style="{StaticResource TabRadio}" Content="Code database" IsChecked="{Binding ShowDatabase}" VerticalAlignment="Center"/>
@@ -113,6 +113,8 @@
                     <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Margin="8,0,0,0" Command="{Binding ReloadCodesCommand}" Content="Reload"/>
                     <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Margin="0" Command="{Binding OpenCodesFolderCommand}" Content="Import codes..." ToolTip="Open the folder for your own .json or .csv code lists"/>
                 </DockPanel>
+            <Grid>
+            <DockPanel>
                 <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="190"/></Grid.ColumnDefinitions>
                     <Grid>
@@ -142,14 +144,14 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel>
-            <Border Margin="0,46,0,0" Background="{StaticResource CardBrush}"
+            <Border Background="{StaticResource CardBrush}"
                     Visibility="{Binding ShowFreezeFrame, Converter={StaticResource BoolToVis}}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="{Binding FreezeTitle}" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
                     <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,2,0,8"
                                Text="Sensor values the ECU stored at the moment the fault was set. They help show the conditions when it happened."/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding FreezeRows}">
+                        <ItemsControl ItemsSource="{Binding FreezeRows}" Margin="0,0,16,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="#1A2836" BorderThickness="0,0,0,1" Padding="0,8">
@@ -165,6 +167,7 @@
                 </DockPanel>
             </Border>
             </Grid>
+            </DockPanel>
         </Border>
     </Grid>
     </DockPanel>

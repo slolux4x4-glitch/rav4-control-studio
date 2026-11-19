@@ -59,19 +59,23 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8"><Image Source="/Assets/icons/st_usb.png" Width="26" Height="26" Margin="0,0,10,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="OBD2 adapter" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
                     <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Border Grid.Row="0" BorderBrush="#1A2836" BorderThickness="0,0,0,1" Padding="0,9"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Description" Foreground="#9AA8B6" FontSize="14" VerticalAlignment="Top"/><TextBlock Grid.Column="1" Text="{Binding AdapterDescriptionText}" FontSize="15" TextWrapping="Wrap" /></Grid></Border><Border Grid.Row="1" BorderBrush="#1A2836" BorderThickness="0,0,0,1" Padding="0,9"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Version" Foreground="#9AA8B6" FontSize="14" VerticalAlignment="Top"/><TextBlock Grid.Column="1" Text="{Binding AdapterVersionText}" FontSize="15" TextWrapping="Wrap" /></Grid></Border><Border Grid.Row="2" BorderBrush="#1A2836" BorderThickness="0,0,0,1" Padding="0,9"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Serial / ID" Foreground="#9AA8B6" FontSize="14" VerticalAlignment="Top"/><TextBlock Grid.Column="1" Text="{Binding AdapterSerialText}" FontSize="15" TextWrapping="Wrap" FontFamily="Consolas"/></Grid></Border><Border Grid.Row="3" BorderBrush="#1A2836" BorderThickness="0,0,0,1" Padding="0,9"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Supply voltage" Foreground="#9AA8B6" FontSize="14" VerticalAlignment="Top"/><TextBlock Grid.Column="1" Text="{Binding AdapterVoltageText}" FontSize="15" TextWrapping="Wrap" /></Grid></Border><Border Grid.Row="4" BorderBrush="#1A2836" BorderThickness="0,0,0,1" Padding="0,9"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="Link" Foreground="#9AA8B6" FontSize="14" VerticalAlignment="Top"/><TextBlock Grid.Column="1" Text="{Binding ConnectionText}" FontSize="15" TextWrapping="Wrap" /></Grid></Border></Grid>
                     <Button Style="{StaticResource ActionButton}" Command="{Binding CopyIdentityCommand}" HorizontalAlignment="Left" Margin="0,16,0,0" Content="Copy all information"/>
-                </StackPanel>
-            </Border>
 
-            <Border Grid.Row="1" Grid.ColumnSpan="3" Style="{StaticResource Card}">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Style="{StaticResource ActionButton}" Margin="0" Command="{Binding ShowSupportedPidsCommand}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="View list" VerticalAlignment="Center"/>
-                            <TextBlock Style="{StaticResource IconText}" Text="&#xE76C;" Margin="8,0,0,0"/>
+                    <!-- Supported parameters: count here, full list on its own page -->
+                    <Border BorderBrush="#1A2836" BorderThickness="0,1,0,0" Margin="0,22,0,0" Padding="0,16,0,0">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10"><Image Source="/Assets/icons/sec_live.png" Width="26" Height="26" Margin="0,0,10,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Text="Supported parameters"/></StackPanel>
+                            <TextBlock Style="{StaticResource Muted}" Margin="0,0,0,12">
+                                <Run Text="{Binding SupportedPidItems.Count, Mode=OneWay}" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold"/><Run Text=" live values (Mode 01) reported by the ECU."/>
+                            </TextBlock>
+                            <Button Style="{StaticResource ActionButton}" HorizontalAlignment="Left" Margin="0" Command="{Binding ShowSupportedPidsCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="View supported parameters" VerticalAlignment="Center"/>
+                                    <TextBlock Style="{StaticResource IconText}" Text="&#xE76C;" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
-                    </Button>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><Image Source="/Assets/icons/sec_live.png" Width="26" Height="26" Margin="0,0,10,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"><Run Text="Supported parameters (Mode 01): "/><Run Text="{Binding SupportedPidItems.Count, Mode=OneWay}"/></TextBlock></StackPanel>
-                </DockPanel>
+                    </Border>
+                </StackPanel>
             </Border>
         </Grid>
     </ScrollViewer>
