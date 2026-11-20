@@ -457,8 +457,11 @@ public sealed partial class MainViewModel
         if (Coolant.HasValue) { _tripCoolantSum += Coolant.Value; _tripSamples++; }
     }
 
-    private static string Economy(double litresPer100Km) =>
-        Units.Imperial ? $"{235.215 / litresPer100Km:0.0} mpg" : $"{litresPer100Km:0.0} L/100 km";
+    // No fuel flow (MAF reads 0, for example rolling with the engine off) has no meaningful economy; in mpg it
+    // would be a division by zero ("∞ mpg").
+    internal static string Economy(double litresPer100Km) =>
+        !double.IsFinite(litresPer100Km) || litresPer100Km <= 0 ? "—"
+        : Units.Imperial ? $"{235.215 / litresPer100Km:0.0} mpg" : $"{litresPer100Km:0.0} L/100 km";
 
     /// <summary>Instant economy, estimated from the MAF sensor and speed (assumes petrol at a 14.7:1 mixture).</summary>
     public string FuelEconomyText

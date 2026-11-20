@@ -196,6 +196,26 @@ public class RemoteViewTests
     }
 }
 
+[Collection("Units")]
+public class EconomyTests
+{
+    [Fact]
+    public void NoFuelFlowShowsADashNotInfinity()
+    {
+        bool before = Units.Imperial;
+        try
+        {
+            Units.Imperial = true;
+            Assert.Equal("—", MainViewModel.Economy(0));
+            Assert.Equal("23.5 mpg", MainViewModel.Economy(10));
+            Units.Imperial = false;
+            Assert.Equal("—", MainViewModel.Economy(double.NaN));
+            Assert.Equal("10.0 L/100 km", MainViewModel.Economy(10));
+        }
+        finally { Units.Imperial = before; }
+    }
+}
+
 public class FileSafetyTests
 {
     [Theory]
@@ -319,6 +339,7 @@ public class ClearCodesPlaceholderTests
     }
 }
 
+[Collection("Units")] // changes the global Units.Imperial; must not run alongside other tests that do
 public class ChartUnitTests
 {
     [Fact]
