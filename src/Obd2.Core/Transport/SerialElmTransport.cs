@@ -53,6 +53,7 @@ public sealed class SerialElmTransport : IElmTransport
                 return text.ToString();
 
             text.Append((char)value);
+            IElmTransport.CheckReplyLength(text);
         }
 
         throw new TimeoutException(

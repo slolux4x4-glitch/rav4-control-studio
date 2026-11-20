@@ -111,6 +111,18 @@ public sealed class RemoteViewServer : IDisposable
 
     public void Dispose() => Stop();
 
+    /// <summary>
+    /// Most connections served at once. A phone asks twice a second, so a few are plenty. Connections beyond this
+    /// are closed straight away, so a misbehaving device on the network cannot pile up work in the app.
+    /// </summary>
+    internal const int MaxClients = 16;
+
+    /// <summary>How long a connection may take to send its request before it is closed.</summary>
+    internal static TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(3);
+
+    // Never disposed: a request that is still finishing after Stop() releases its slot here.
+    private readonly SemaphoreSlim _slots = new(MaxClients, MaxClients);
+
     private async Task AcceptLoop(TcpListener listener, CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -118,7 +130,12 @@ public sealed class RemoteViewServer : IDisposable
             try
             {
                 var client = await listener.AcceptTcpClientAsync(ct);
-                _ = Task.Run(() => Handle(client));
+                if (!_slots.Wait(0))
+                {
+                    client.Dispose(); // too many open at once
+                    continue;
+                }
+                _ = HandleAsync(client);
             }
             catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException or SocketException)
             {
@@ -127,19 +144,21 @@ public sealed class RemoteViewServer : IDisposable
         }
     }
 
-    private void Handle(TcpClient client)
+    // Fully asynchronous: a connection that opens and then sends nothing waits without holding a thread, so it
+    // cannot starve the threads the app uses to poll the car.
+    private async Task HandleAsync(TcpClient client)
     {
-        using (client)
+        try
         {
-            if (client.Client.RemoteEndPoint is not IPEndPoint remote || !IsLocalNetwork(remote.Address))
-                return; // drop connections from outside the local network without answering
-
-            try
+            using (client)
             {
-                client.ReceiveTimeout = 3000;
+                if (client.Client.RemoteEndPoint is not IPEndPoint remote || !IsLocalNetwork(remote.Address))
+                    return; // drop connections from outside the local network without answering
+
+                using var timeout = new CancellationTokenSource(RequestTimeout);
                 using var stream = client.GetStream();
                 var buffer = new byte[4096];
-                int read = stream.Read(buffer, 0, buffer.Length);
+                int read = await stream.ReadAsync(buffer, timeout.Token);
                 string request = Encoding.ASCII.GetString(buffer, 0, read);
                 string line = request.Split("\r\n")[0];
                 var parts = line.Split(' ');
@@ -147,26 +166,40 @@ public sealed class RemoteViewServer : IDisposable
                 bool authorised = HasToken(path, Token);
 
                 if (parts[0] != "GET" || !authorised)
-                    Respond(stream, "403 Forbidden", "text/plain", "Open the address shown in RAV4 Control Studio (it includes a code).");
+                    await RespondAsync(stream, "403 Forbidden", "text/plain", "Open the address shown in RAV4 Control Studio (it includes a code).", timeout.Token);
                 else if (path.StartsWith("/data", StringComparison.Ordinal))
-                    Respond(stream, "200 OK", "application/json", Snapshot());
+                    await RespondAsync(stream, "200 OK", "application/json", Snapshot(), timeout.Token);
                 else
-                    Respond(stream, "200 OK", "text/html; charset=utf-8", Page.Replace("{{TOKEN}}", Token));
+                    await RespondAsync(stream, "200 OK", "text/html; charset=utf-8", Page.Replace("{{TOKEN}}", Token), timeout.Token);
             }
-            catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException)
-            {
-                // a phone that disconnects mid-request is not an error
-            }
+        }
+        catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException or OperationCanceledException)
+        {
+            // a phone that disconnects mid-request, or a connection that never sends one, is not an error
+        }
+        finally
+        {
+            _slots.Release();
         }
     }
 
-    private static void Respond(NetworkStream stream, string status, string type, string body)
+    /// <summary>
+    /// Headers that stop browsers from guessing other content types, showing the page inside another site, loading
+    /// anything from elsewhere, or passing the address (with its code) on to another site.
+    /// </summary>
+    internal const string SecurityHeaders =
+        "X-Content-Type-Options: nosniff\r\n" +
+        "X-Frame-Options: DENY\r\n" +
+        "Referrer-Policy: no-referrer\r\n" +
+        "Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; form-action 'none'; base-uri 'none'\r\n";
+
+    private static async Task RespondAsync(NetworkStream stream, string status, string type, string body, CancellationToken ct)
     {
         var bytes = Encoding.UTF8.GetBytes(body);
         var head = Encoding.ASCII.GetBytes(
-            $"HTTP/1.1 {status}\r\nContent-Type: {type}\r\nContent-Length: {bytes.Length}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n");
-        stream.Write(head, 0, head.Length);
-        stream.Write(bytes, 0, bytes.Length);
+            $"HTTP/1.1 {status}\r\nContent-Type: {type}\r\nContent-Length: {bytes.Length}\r\nCache-Control: no-store\r\n{SecurityHeaders}Connection: close\r\n\r\n");
+        await stream.WriteAsync(head, ct);
+        await stream.WriteAsync(bytes, ct);
     }
 
     private const string Page = """

@@ -89,7 +89,27 @@ public sealed partial class MainViewModel
     public static string VehicleFolder =>
         CurrentVehicle == DefaultVehicle
             ? AppFolder
-            : Path.Combine(AppFolder, "Vehicles", string.Concat(CurrentVehicle.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)));
+            : Path.Combine(AppFolder, "Vehicles", VehicleFolderName(CurrentVehicle));
+
+    private static readonly HashSet<string> ReservedNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    };
+
+    /// <summary>
+    /// A vehicle name turned into one safe folder name. Characters Windows does not allow become "_"; trailing dots
+    /// and spaces (which Windows drops) are removed; and names Windows treats specially ("..", "CON", "NUL" …) get a
+    /// leading "_", so a vehicle's folder always stays inside the Vehicles folder and never points at a device.
+    /// </summary>
+    internal static string VehicleFolderName(string vehicle)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        string name = string.Concat(vehicle.Select(c => invalid.Contains(c) ? '_' : c)).Trim().TrimEnd('.', ' ');
+        string stem = name.Split('.')[0].Trim();
+        return name.Length == 0 || ReservedNames.Contains(stem) ? "_" + name : name;
+    }
 
     public static string ParametersFolder => Path.Combine(AppFolder, "Parameters");
 
@@ -175,16 +195,20 @@ public sealed partial class MainViewModel
 
     public double UiScale => _uiScale?.Scale ?? 1.0;
 
+    private static double SafeClamp(double value, double min, double max, double fallback) =>
+        double.IsFinite(value) ? Math.Clamp(value, min, max) : fallback;
+
     private void InitFeatures(AppSettings saved)
     {
         _autoReconnect = saved.AutoReconnect;
         _alertsEnabled = saved.AlertsEnabled;
-        _alertCoolantC = saved.AlertCoolantC;
-        _alertVoltageMin = saved.AlertVoltageMin;
-        _alertRpmMax = saved.AlertRpmMax;
+        // Same limits as the settings page, so a hand-edited settings.json cannot switch an alert off by accident.
+        _alertCoolantC = SafeClamp(saved.AlertCoolantC, 60, 150, 105);
+        _alertVoltageMin = SafeClamp(saved.AlertVoltageMin, 6, 14, 11.5);
+        _alertRpmMax = SafeClamp(saved.AlertRpmMax, 1000, 9000, 6500);
         _uiScale = UiScaleOptions.FirstOrDefault(o => Math.Abs(o.Scale - saved.UiScale) < 0.01) ?? UiScaleOptions[1];
 
-        foreach (var v in saved.Vehicles.Where(v => !string.IsNullOrWhiteSpace(v)).Distinct()) Vehicles.Add(v);
+        foreach (var v in (saved.Vehicles ?? new()).Where(v => !string.IsNullOrWhiteSpace(v)).Distinct()) Vehicles.Add(v);
         if (!Vehicles.Contains(DefaultVehicle)) Vehicles.Insert(0, DefaultVehicle);
         _selectedVehicle = Vehicles.Contains(saved.Vehicle) ? saved.Vehicle : DefaultVehicle;
         CurrentVehicle = _selectedVehicle;
@@ -976,7 +1000,10 @@ public sealed partial class MainViewModel
         }
         else
         {
-            _remote?.Stop();
+            // Throw the server away, not just stop it: the next one gets a new access code, so turning the phone
+            // view off and on locks out anyone who saw the old address.
+            _remote?.Dispose();
+            _remote = null;
             RemoteViewUrl = "Off";
         }
         Raise(nameof(RemoteViewUrl));

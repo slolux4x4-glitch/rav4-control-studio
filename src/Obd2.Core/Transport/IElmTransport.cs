@@ -15,4 +15,17 @@ public interface IElmTransport : IDisposable
 
     /// <summary>Reads everything up to the ELM327 '&gt;' prompt and returns the text before it.</summary>
     string ReadUntilPrompt(TimeSpan timeout);
+
+    /// <summary>
+    /// Longest reply accepted, in characters. Real replies to the read-only requests are a few hundred characters;
+    /// anything streaming far past that is a faulty adapter or another device on its network, and is refused
+    /// before it can use up memory.
+    /// </summary>
+    const int MaxReplyLength = 64 * 1024;
+
+    internal static void CheckReplyLength(System.Text.StringBuilder text)
+    {
+        if (text.Length > MaxReplyLength)
+            throw new IOException($"The adapter sent more than {MaxReplyLength / 1024} KB without finishing its reply. The connection was dropped.");
+    }
 }

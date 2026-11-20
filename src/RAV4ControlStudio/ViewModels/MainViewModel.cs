@@ -155,8 +155,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _loading = true;
         var saved = AppSettings.Load();
         if (Enum.TryParse<ConnectionMode>(saved.Mode, out var savedMode) && savedMode != ConnectionMode.Replay) _mode = savedMode;
-        _wifiHost = saved.WifiHost;
-        _wifiPort = saved.WifiPort;
+        // settings.json is a plain file anyone can edit; keep only values the app can use.
+        if (!string.IsNullOrWhiteSpace(saved.WifiHost)) _wifiHost = saved.WifiHost.Trim();
+        if (saved.WifiPort is >= 1 and <= 65535) _wifiPort = saved.WifiPort;
         if (BaudRates.Contains(saved.Baud)) _selectedBaud = saved.Baud;
         SelectedProtocol = Protocols.FirstOrDefault(p => p.Number == saved.Protocol) ?? Protocols[1];
         _imperial = saved.Imperial;

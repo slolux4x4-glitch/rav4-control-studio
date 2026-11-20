@@ -106,6 +106,7 @@ public sealed class TcpElmTransport : IElmTransport
                     return text.ToString();
                 text.Append((char)buffer[i]);
             }
+            IElmTransport.CheckReplyLength(text);
         }
 
         throw new TimeoutException($"No prompt from adapter after {timeout.TotalSeconds:0.#}s. Partial reply: \"{text}\"");

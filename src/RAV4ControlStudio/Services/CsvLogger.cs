@@ -50,8 +50,19 @@ public sealed class CsvLogger : IDisposable
 
     private DateTime _lastFlush = DateTime.MinValue;
 
-    private static string Escape(string text) =>
-        text.Contains(',') || text.Contains('"') ? $"\"{text.Replace("\"", "\"\"")}\"" : text;
+    /// <summary>
+    /// Makes a header cell safe. Parameter names can come from files in the Parameters folder, so a name such as
+    /// "=HYPERLINK(...)" must not turn into a live formula when the log is opened in Excel: a leading quote mark
+    /// keeps it as text. Commas, quotes and line breaks are quoted the CSV way.
+    /// </summary>
+    internal static string Escape(string text)
+    {
+        if (text.Length > 0 && "=+-@\t\r".Contains(text[0]))
+            text = "'" + text;
+        return text.IndexOfAny(new[] { ',', '"', '\r', '\n' }) >= 0
+            ? $"\"{text.Replace("\"", "\"\"")}\""
+            : text;
+    }
 
     public void Dispose() => _writer.Dispose();
 }

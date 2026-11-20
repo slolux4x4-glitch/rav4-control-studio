@@ -26,17 +26,20 @@ public sealed record ElmResponse(
 
 /// <summary>
 /// Sends commands to an ELM327 and enforces a read-only allowlist (reads and "tester present" only).
-/// Only AT setup commands and OBD-II service 01 (live data), 03/07 (DTCs read) and 09 02 (VIN)
-/// can be sent. Anything else (for example mode 04 "clear codes", or mode 08 actuator tests)
-/// is rejected before it reaches the adapter.
+/// Only AT setup commands and these reads can be sent: OBD-II service 01 (live data), 02 (freeze frame),
+/// 03/07/0A (stored, pending and permanent codes), 09 (vehicle information), UDS 22 (read data by identifier)
+/// and 3E 00 (tester present, which changes nothing). Anything else (for example mode 04 "clear codes",
+/// mode 08 actuator tests, or UDS writes and routines) is rejected before it reaches the adapter.
 /// </summary>
 public sealed class ElmClient : IDisposable
 {
+    // Anchored with \A and \z, not ^ and $: in .NET, $ also matches before a final line break, which would let
+    // "0100\n" through and put an extra line on the wire.
     private static readonly Regex AllowedAt =
-        new(@"^AT(Z|I|DP|RV|E[01]|L[01]|S[01]|H[01]|CAF[01]|AT[012]|SP[0-9A-C]|@[12]|SH[0-9A-F]{3}|ST[0-9A-F]{2})$", RegexOptions.Compiled);
+        new(@"\AAT(Z|I|DP|RV|E[01]|L[01]|S[01]|H[01]|CAF[01]|AT[012]|SP[0-9A-C]|@[12]|SH[0-9A-F]{3}|ST[0-9A-F]{2})\z", RegexOptions.Compiled);
 
     private static readonly Regex AllowedObd =
-        new(@"^(01[0-9A-F]{2}|02[0-9A-F]{2}00|03|07|0A|09(00|02|04|06|0A)|22[0-9A-F]{4}|3E00)$", RegexOptions.Compiled);
+        new(@"\A(01[0-9A-F]{2}|02[0-9A-F]{2}00|03|07|0A|09(00|02|04|06|0A)|22[0-9A-F]{4}|3E00)\z", RegexOptions.Compiled);
 
     private static readonly Regex FramePrefix = new(@"^[0-9A-F]:", RegexOptions.Compiled);
     private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);

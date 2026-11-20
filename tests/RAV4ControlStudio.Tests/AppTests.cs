@@ -122,6 +122,114 @@ public class RemoteViewTests
         server.Stop();
         Assert.False(server.IsRunning);
     }
+
+    private static int FreePort()
+    {
+        using var probe = new TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        return ((IPEndPoint)probe.LocalEndpoint).Port;
+    }
+
+    [Fact]
+    public async Task ResponsesCarryBrowserSecurityHeaders()
+    {
+        int port = FreePort();
+        using var server = new RemoteViewServer();
+        Assert.True(server.Start(port, out string error), error);
+
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        var page = await http.GetAsync($"http://127.0.0.1:{port}/?t={server.Token}");
+
+        Assert.Equal("nosniff", string.Join("", page.Headers.GetValues("X-Content-Type-Options")));
+        Assert.Equal("DENY", string.Join("", page.Headers.GetValues("X-Frame-Options")));
+        Assert.Equal("no-referrer", string.Join("", page.Headers.GetValues("Referrer-Policy")));
+        Assert.Contains("default-src 'none'", string.Join("", page.Headers.GetValues("Content-Security-Policy")));
+    }
+
+    [Fact]
+    public async Task ConnectionsBeyondTheLimitAreClosedAndIdleOnesDoNotBlockTheApp()
+    {
+        int port = FreePort();
+        using var server = new RemoteViewServer();
+        Assert.True(server.Start(port, out string error), error);
+
+        // Fill every slot with connections that never send a request.
+        var idle = new List<TcpClient>();
+        try
+        {
+            for (int i = 0; i < RemoteViewServer.MaxClients; i++)
+            {
+                var c = new TcpClient();
+                await c.ConnectAsync(IPAddress.Loopback, port);
+                idle.Add(c);
+            }
+            await Task.Delay(200);
+
+            // One more is closed straight away rather than queued.
+            using var extra = new TcpClient();
+            await extra.ConnectAsync(IPAddress.Loopback, port);
+            extra.ReceiveTimeout = 2000;
+            int read;
+            try { read = extra.GetStream().Read(new byte[16], 0, 16); }
+            catch (IOException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.ConnectionReset }) { read = 0; }
+            Assert.Equal(0, read); // closed, not left hanging (a hang would time out with an exception instead)
+
+            // The idle connections wait without holding threads, so the thread pool still runs work promptly.
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            await Task.Run(() => { });
+            Assert.True(clock.ElapsedMilliseconds < 500, $"thread pool stalled for {clock.ElapsedMilliseconds} ms");
+        }
+        finally
+        {
+            foreach (var c in idle) c.Dispose();
+        }
+
+        // Once they are gone, a phone is served again.
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        HttpResponseMessage? ok = null;
+        for (int attempt = 0; attempt < 20 && ok?.StatusCode != HttpStatusCode.OK; attempt++)
+        {
+            try { ok = await http.GetAsync($"http://127.0.0.1:{port}/data?t={server.Token}"); }
+            catch (HttpRequestException) { await Task.Delay(100); }
+        }
+        Assert.Equal(HttpStatusCode.OK, ok?.StatusCode);
+    }
+}
+
+public class FileSafetyTests
+{
+    [Theory]
+    [InlineData("Engine speed [rpm]", "Engine speed [rpm]")]
+    [InlineData("=HYPERLINK(\"http://x\") [%]", "\"'=HYPERLINK(\"\"http://x\"\") [%]\"")]
+    [InlineData("+1 [V]", "'+1 [V]")]
+    [InlineData("-cmd [V]", "'-cmd [V]")]
+    [InlineData("@SUM(A1) [V]", "'@SUM(A1) [V]")]
+    [InlineData("Fuel, trim [%]", "\"Fuel, trim [%]\"")]
+    [InlineData("two\nlines [x]", "\"two\nlines [x]\"")]
+    public void CsvHeadersCannotBecomeSpreadsheetFormulas(string name, string expected) =>
+        Assert.Equal(expected, CsvLogger.Escape(name));
+
+    [Theory]
+    [InlineData("Hilux", "Hilux")]
+    [InlineData("..", "_")]
+    [InlineData(".", "_")]
+    [InlineData("   ", "_")]
+    [InlineData("a/../b", "a_.._b")]
+    [InlineData("..\\..\\Windows", ".._.._Windows")]
+    [InlineData("CON", "_CON")]
+    [InlineData("nul.txt", "_nul.txt")]
+    [InlineData("Com1", "_Com1")]
+    [InlineData("My car.", "My car")]
+    [InlineData("Console", "Console")]
+    public void VehicleFoldersStayInsideTheVehiclesFolder(string vehicle, string expected)
+    {
+        string folder = MainViewModel.VehicleFolderName(vehicle);
+        Assert.Equal(expected, folder);
+
+        string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "Vehicles"));
+        string full = Path.GetFullPath(Path.Combine(root, folder));
+        Assert.StartsWith(root + Path.DirectorySeparatorChar, full);
+    }
 }
 
 public class LogReplayTests
