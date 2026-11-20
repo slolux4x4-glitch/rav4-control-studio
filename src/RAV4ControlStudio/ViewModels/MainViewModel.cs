@@ -1144,6 +1144,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         IsBusy = true;
         State = LinkState.Connecting;
+        int attempt = ++_connectAttempt;
         var opening = mode switch
         {
             ConnectionMode.Demo => "Starting simulated ECU…",
@@ -1157,6 +1158,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             var (service, snapshot) = await Task.Run(() => OpenSession(mode, port, host, wifiPort, baud, protocol, faults));
+
+            // Disconnect was pressed while this was connecting (or a newer connect has started): drop this session.
+            if (attempt != _connectAttempt)
+            {
+                await Task.Run(service.Dispose);
+                _trace.Note("Connect finished after Disconnect was pressed; the connection was closed.");
+                return;
+            }
 
             _obd = service;
             _activeProtocol = protocol;
@@ -1203,6 +1212,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 ? "Simulated ECU connected (DEMO MODE)."
                 : $"Connected to the ECU through {service.TransportName}.");
         }
+        catch (Exception ex) when (attempt != _connectAttempt)
+        {
+            _trace.Note($"Connect attempt ended after Disconnect: {ex.Message}"); // the user already disconnected
+        }
         catch (Exception ex)
         {
             State = LinkState.Error;
@@ -1212,13 +1225,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            IsBusy = false;
+            if (attempt == _connectAttempt) IsBusy = false;
         }
     }
+
+    // Bumped by every connect and disconnect, so a connect that finishes after Disconnect knows to stand down.
+    private int _connectAttempt;
 
     public async Task DisconnectAsync()
     {
         if (!IsConnected && !IsBusy) return;
+        _connectAttempt++;
 
         _scanCts?.Cancel(); // a running ECU scan holds the adapter; stop it so the link can close
         _cts?.Cancel();
@@ -1245,6 +1262,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         RaiseMetrics();
         State = LinkState.Disconnected;
         IsBusy = false;
+        _remoteJson = BuildRemoteJson(); // the phone view shows "--" and "waiting", not the last readings as live
         Notify("Disconnected.");
         _trace.Note("Disconnected");
         RestoreModeAfterReplay();
@@ -1290,7 +1308,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         var path = Path.Combine(LogsFolder, $"log-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
-        _logger = new CsvLogger(path, LivePids.Where(p => p.IsSupported).ToList());
+        try
+        {
+            _logger = new CsvLogger(path, LivePids.Where(p => p.IsSupported).ToList());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Notify($"Could not start logging: {ex.Message}");
+            return;
+        }
         LogFilePath = path;
         LogRowCount = 0;
         IsLogging = true;
@@ -1530,8 +1556,22 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         if (_logger is not null)
         {
-            _logger.WriteRow(DateTime.Now);
-            LogRowCount = _logger.RowCount;
+            try
+            {
+                _logger.WriteRow(DateTime.Now);
+                LogRowCount = _logger.RowCount;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Disk full or the drive was removed. Stop once with a message, rather than failing (and showing an
+                // error box) on every refresh, five times a second.
+                var logger = _logger;
+                _logger = null;
+                try { logger.Dispose(); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+                IsLogging = false;
+                RefreshLogFiles();
+                Notify($"Logging stopped: could not write to {logger.FilePath} ({ex.Message})");
+            }
         }
     }
 
@@ -1575,6 +1615,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
             ReadinessHeadline = r.AllSupportedComplete ? "Ready for inspection" : "Not ready. Monitors still running.";
             ReadinessTimestamp = $"Checked {r.Timestamp:HH:mm:ss}";
+        }
+        else
+        {
+            // No answer this time: clear the old result rather than show it as if it had just been read.
+            _readinessLoaded = false;
+            MilOn = false;
+            DtcCount = 0;
+            IgnitionText = "—";
+            Raise(nameof(MilText));
+            Monitors.Clear();
+            ReadinessHeadline = "Not reported by the ECU";
+            ReadinessTimestamp = $"Checked {DateTime.Now:HH:mm:ss}";
         }
     }
 
@@ -1636,8 +1688,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         int rows = _logger.RowCount;
         string path = _logger.FilePath;
-        _logger.Dispose();
+        var logger = _logger;
         _logger = null;
+        try { logger.Dispose(); } // writes out the last buffered rows, which can fail on a full disk
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            IsLogging = false;
+            Notify($"Logging stopped, but the last rows could not be written to {path}: {ex.Message}");
+            return;
+        }
         IsLogging = false;
         RefreshLogFiles();
         Notify($"Logging stopped. {rows} rows saved to {path}");
@@ -1725,8 +1784,25 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private void OpenFolder(string folder)
     {
-        Directory.CreateDirectory(folder);
+        try { Directory.CreateDirectory(folder); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Notify($"Could not create {folder}: {ex.Message}");
+            return;
+        }
         OpenUri(folder);
+    }
+
+    /// <summary>Writes a help file into a folder if it is not there yet. A failure only loses the help file.</summary>
+    private static void WriteHelpFile(string path, string text)
+    {
+        try
+        {
+            if (File.Exists(path)) return;
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, text);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
     }
 
     private void OpenFile(string path) => OpenUri(path);
@@ -1748,11 +1824,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private void OpenCodesFolder()
     {
-        Directory.CreateDirectory(CodesFolder);
         string readme = Path.Combine(CodesFolder, "README.txt");
-        if (!File.Exists(readme))
         {
-            File.WriteAllText(readme,
+            WriteHelpFile(readme,
                 "Add your own trouble code lists here, then press Reload in the Diagnostics page." + Environment.NewLine + Environment.NewLine +
                 "Supported files:" + Environment.NewLine +
                 "  .json  an array like [ { \"dtc\": \"P1349\", \"description\": \"VVT system malfunction (Bank 1)\" } ]" + Environment.NewLine +

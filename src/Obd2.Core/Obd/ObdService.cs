@@ -45,7 +45,16 @@ public sealed class ObdService : IDisposable
         _elm.SendAt("ATH0");   // headers off
         _elm.SendAt("ATCAF1"); // automatic ISO-TP framing (multi-frame replies)
         _elm.SendAt($"ATSP{protocolNumber}");
+        DescribeProtocol();
+    }
 
+    /// <summary>
+    /// Asks the adapter which protocol it is using. With protocol 0 (automatic) the adapter only knows once it has
+    /// talked to the car, so before that it answers just "AUTO"; <see cref="LoadEcuInfo"/> asks again after the
+    /// first request, otherwise fault codes on a CAN car would be read without skipping the count byte.
+    /// </summary>
+    private void DescribeProtocol()
+    {
         var describe = _elm.SendAt("ATDP");
         Protocol = describe.Lines.FirstOrDefault(l => !l.Equals("OK", StringComparison.OrdinalIgnoreCase)) ?? "Unknown";
         IsCan = Protocol.Contains("15765", StringComparison.Ordinal) || Protocol.Contains("CAN", StringComparison.OrdinalIgnoreCase);
@@ -61,13 +70,13 @@ public sealed class ObdService : IDisposable
     public void LoadEcuInfo()
     {
         _supported.Clear();
-        byte block = 0x00;
 
-        while (block <= 0xE0)
+        // int, not byte: after the last block (E0) the next would wrap round to 00 and the loop would never end.
+        for (int block = 0x00; block <= 0xE0; block += 0x20)
         {
             // More than one control unit can answer (for example engine and transmission). Combine their lists,
             // so it does not matter which one replies first.
-            var data = SupportedBitmap(block);
+            var data = SupportedBitmap((byte)block);
             if (data is null)
                 break;
 
@@ -78,12 +87,16 @@ public sealed class ObdService : IDisposable
                 if (!bit) continue;
 
                 if (i == 31) nextBlock = true; // PID block+0x20 means "next block is available"
-                _supported.Add((byte)(block + i + 1));
+                int pid = block + i + 1;
+                if (pid <= 0xFF) _supported.Add((byte)pid);
             }
 
             if (!nextBlock) break;
-            block += 0x20;
         }
+
+        // Automatic protocol: now that the adapter has found the car's protocol, find out which one it is.
+        if (!IsCan && Protocol.Contains("AUTO", StringComparison.OrdinalIgnoreCase))
+            DescribeProtocol();
 
         // The VIN and identity are optional: a slow or missing answer must not stop the connection.
         try { Vin = ReadVin(); }
@@ -249,14 +262,8 @@ public sealed class ObdService : IDisposable
             var response = _elm.SendObd(p.Service + p.Id);
             if (response.HasError) return null;
 
-            string prefix = (Convert.ToInt32(p.Service, 16) + 0x40).ToString("X2") + p.Id;
-            foreach (var line in response.HexLines)
-            {
-                if (!line.StartsWith(prefix, StringComparison.Ordinal)) continue;
-                var bytes = FromHex(line[prefix.Length..]);
-                return bytes.Length >= p.Bytes ? p.Decode(bytes[..p.Bytes]) : null;
-            }
-            return null;
+            var bytes = MessageData(response, FromHex((Convert.ToInt32(p.Service, 16) + 0x40).ToString("X2") + p.Id));
+            return bytes is not null && bytes.Length >= p.Bytes ? p.Decode(bytes[..p.Bytes]) : null;
         }
         finally
         {
@@ -305,11 +312,11 @@ public sealed class ObdService : IDisposable
                     var r = _elm.SendObd("22" + did, TimeSpan.FromSeconds(2));
                     if (r.HasError) continue;
 
-                    string prefix = "62" + did;
-                    string? line = r.HexLines.FirstOrDefault(l => l.StartsWith(prefix, StringComparison.Ordinal));
-                    if (line is null) continue;
+                    // Values longer than 4 bytes (a VIN, part numbers) arrive as multi-frame messages.
+                    var data = MessageData(r, FromHex("62" + did));
+                    if (data is null) continue;
 
-                    string text = AsText(FromHex(line[prefix.Length..]));
+                    string text = AsText(data);
                     if (text.Length > 0) fields[DidLabels[did]] = text;
                 }
                 found.Add(new EcuNode(id, id + 8, fields));
@@ -381,6 +388,18 @@ public sealed class ObdService : IDisposable
             .Where(m => m.Bytes.Count > 0)
             .Select(m => (m.Expected > 0 ? m.Bytes.Take(m.Expected) : m.Bytes).ToArray()) // drop frame padding
             .ToList();
+    }
+
+    /// <summary>
+    /// The bytes after <paramref name="prefix"/> in the first whole message that starts with it, joining multi-frame
+    /// messages first. Null when no message matches.
+    /// </summary>
+    internal static byte[]? MessageData(ElmResponse response, byte[] prefix)
+    {
+        foreach (var message in Messages(response))
+            if (message.Length >= prefix.Length && message.AsSpan(0, prefix.Length).SequenceEqual(prefix))
+                return message[prefix.Length..];
+        return null;
     }
 
     /// <summary>The supported-PID bitmap for one block, combined (OR) across every control unit that answers.</summary>

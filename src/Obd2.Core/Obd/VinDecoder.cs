@@ -24,7 +24,7 @@ public static class VinDecoder
         if (vin.Length >= 10)
         {
             int idx = YearCodes.IndexOf(vin[9]);
-            if (idx >= 0) year = 2010 + idx;
+            if (idx >= 0) year = YearFor(idx, DateTime.Now.Year);
         }
 
         return new VinInfo(
@@ -34,6 +34,17 @@ public static class VinDecoder
             year,
             Manufacturer(vin),
             Region(vin));
+    }
+
+    /// <summary>
+    /// The year codes repeat every 30 years (A = 1980 and 2010, 1 = 2001 and 2031). The later year is used unless
+    /// it is still in the future (allowing next year's models, which go on sale early), so a 2005 car ("5") is not
+    /// shown as 2035.
+    /// </summary>
+    internal static int YearFor(int codeIndex, int currentYear)
+    {
+        int year = 2010 + codeIndex;
+        return year > currentYear + 1 ? year - 30 : year;
     }
 
     /// <summary>Computes the position-9 check digit for a 17-character VIN (position 9 is ignored).</summary>

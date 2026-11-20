@@ -705,7 +705,8 @@ public sealed partial class MainViewModel
     // ===================================================== custom parameters
 
     private CustomParameter[] _customParams = Array.Empty<CustomParameter>();
-    private readonly Dictionary<string, double?> _pendingCustom = new();
+    // Keyed by the parameter itself, not its name: two files can use the same name for different readings.
+    private readonly Dictionary<CustomParameter, double?> _pendingCustom = new();
     private int _customCursor;
 
     public ObservableCollection<CustomValue> CustomValues { get; } = new();
@@ -730,11 +731,9 @@ public sealed partial class MainViewModel
 
     private void OpenParametersFolder()
     {
-        Directory.CreateDirectory(ParametersFolder);
         string example = Path.Combine(ParametersFolder, "example.json.txt");
-        if (!File.Exists(example))
         {
-            File.WriteAllText(example,
+            WriteHelpFile(example,
                 "Copy this file to something.json (remove the .txt) and edit it, then press Reload.\n" +
                 "Only read-only services are accepted: \"01\" (live data) and \"22\" (read data by identifier).\n" +
                 "Formula: A, B, C... are the reply bytes. Header is the ECU request address (optional), for example 7E0.\n\n" +
@@ -773,20 +772,20 @@ public sealed partial class MainViewModel
         try { value = obd.ReadCustom(p); }
         catch (TimeoutException) { }
 
-        lock (_readGate) _pendingCustom[p.Name] = value;
+        lock (_readGate) _pendingCustom[p] = value;
     }
 
     private void ApplyCustom()
     {
-        Dictionary<string, double?> snapshot;
+        Dictionary<CustomParameter, double?> snapshot;
         lock (_readGate)
         {
             if (_pendingCustom.Count == 0) return;
-            snapshot = new Dictionary<string, double?>(_pendingCustom);
+            snapshot = new Dictionary<CustomParameter, double?>(_pendingCustom);
             _pendingCustom.Clear();
         }
         foreach (var cv in CustomValues)
-            if (snapshot.TryGetValue(cv.Name, out var v)) cv.Value = v ?? double.NaN;
+            if (snapshot.TryGetValue(cv.Definition, out var v)) cv.Value = v ?? double.NaN;
     }
 
     // ===================================================== per-tick work (called every 200 ms from the UI timer)
@@ -987,6 +986,7 @@ public sealed partial class MainViewModel
         if (_remoteEnabled)
         {
             _remote ??= new RemoteViewServer();
+            _remoteJson = BuildRemoteJson(); // valid from the first request, even before connecting
             _remote.Snapshot = () => _remoteJson;
             if (!_remote.IsRunning && !_remote.Start(8765, out string error))
             {
