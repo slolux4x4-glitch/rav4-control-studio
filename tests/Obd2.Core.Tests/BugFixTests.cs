@@ -32,7 +32,7 @@ internal sealed class ScriptedElm : IElmTransport
 public class BugFixTests
 {
     [Fact]
-    public void SupportedPidScanStopsAfterTheLastBlock()
+    public async Task SupportedPidScanStopsAfterTheLastBlock()
     {
         // Every block claims "the next block is supported too", including the last one (E0).
         var elm = new ScriptedElm((cmd, _) => cmd.Length == 4 && cmd.StartsWith("01") && Convert.ToInt32(cmd[2..], 16) % 0x20 == 0
@@ -40,8 +40,7 @@ public class BugFixTests
             : null);
         using var obd = new ObdService(elm);
 
-        var run = Task.Run(obd.LoadEcuInfo);
-        Assert.True(run.Wait(TimeSpan.FromSeconds(10)), "the scan never finished");
+        await Task.Run(obd.LoadEcuInfo).WaitAsync(TimeSpan.FromSeconds(10)); // throws TimeoutException if it never ends
         Assert.Equal(255, obd.SupportedPids.Count); // 01 to FF
         Assert.Equal(8, elm.Sent.Count(c => c.StartsWith("01")));
     }

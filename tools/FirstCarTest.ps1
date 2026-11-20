@@ -133,6 +133,7 @@ foreach ($step in $steps) {
         if ($retry -eq "y") {
             $again = Ask "   Result after trying again [p/f]" @("p", "f")
             if ($again -eq "p") { $answer = "p"; $note = "passed on retry; first time: $note" }
+            else { $note = "failed again on retry; $note" }
         }
     }
 

@@ -361,8 +361,11 @@ public sealed partial class MainViewModel
         Notify($"Connection lost: {reason}");
         _trace.Note($"Connection lost: {reason}");
         bool wasLogging = IsLogging; // disconnecting stops the log; start a new one if the link comes back
+        // Read before disconnecting: Disconnect switches the mode back from Replay to the one used before it, so
+        // checking afterwards would "reconnect" a failed log replay to the car.
+        bool wasReplay = _sessionMode == ConnectionMode.Replay || SelectedMode == ConnectionMode.Replay;
         await DisconnectAsync();
-        if (!_autoReconnect || SelectedMode == ConnectionMode.Replay) return;
+        if (!_autoReconnect || wasReplay) return;
 
         _reconnectCts?.Cancel();
         var cts = _reconnectCts = new CancellationTokenSource();

@@ -1129,9 +1129,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             Notify("Choose an adapter port, or switch to Wi-Fi or Demo.");
             return;
         }
-        if (mode == ConnectionMode.Wifi && (host.Length == 0 || wifiPort <= 0))
+        if (mode == ConnectionMode.Wifi && (host.Length == 0 || wifiPort is < 1 or > 65535))
         {
-            Notify("Enter the Wi-Fi adapter address and port.");
+            Notify("Enter the Wi-Fi adapter address and a port from 1 to 65535 (usually 35000).");
             return;
         }
 
