@@ -29,7 +29,8 @@ public sealed class SessionTrace
         Add($"TX  {command}\r\n    !! no prompt after {elapsed.TotalMilliseconds:0} ms" + (string.IsNullOrEmpty(partial) ? "" : $", partial: {Visible(partial)}"));
 
     public void Failure(string command, Exception ex) =>
-        Add($"TX  {command}\r\n    !! {ex.GetType().Name}: {ex.Message}");
+        Add($"TX  {command}\r\n    !! {ex.GetType().Name}: " +
+            (ex.Message.Length > MaxRecordedReply ? ex.Message[..MaxRecordedReply] + " ..." : ex.Message));
 
     public void LateReply(string rawReply) => Add($"    late reply discarded: {Visible(rawReply)}");
 
@@ -72,10 +73,20 @@ public sealed class SessionTrace
         }
     }
 
+    /// <summary>
+    /// Most characters of one reply kept in the trace. Real replies are a few hundred characters; without a limit,
+    /// an adapter (or another device on its Wi-Fi) sending replies of tens of KB could make the 40,000-line trace
+    /// take gigabytes of memory.
+    /// </summary>
+    public const int MaxRecordedReply = 2_000;
+
     /// <summary>Shows control characters so the reply can be read exactly as the adapter sent it.</summary>
     internal static string Visible(string raw)
     {
-        var sb = new StringBuilder(raw.Length + 8);
+        int extra = raw.Length - MaxRecordedReply;
+        if (extra > 0) raw = raw[..MaxRecordedReply];
+
+        var sb = new StringBuilder(raw.Length + 40);
         foreach (char c in raw)
         {
             sb.Append(c switch
@@ -87,6 +98,7 @@ public sealed class SessionTrace
                 _ => c.ToString(),
             });
         }
+        if (extra > 0) sb.Append($" ... ({extra:N0} more characters not kept)");
         return sb.Length == 0 ? "(nothing)" : sb.ToString();
     }
 }

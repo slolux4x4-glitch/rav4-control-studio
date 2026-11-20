@@ -581,11 +581,13 @@ public sealed partial class MainViewModel
     {
         try
         {
-            ApplyBaseline(File.Exists(BaselinePath)
+            var file = File.Exists(BaselinePath)
                 ? JsonSerializer.Deserialize<BaselineFile>(File.ReadAllText(BaselinePath))
-                : null);
+                : null;
+            // A hand-edited or damaged file may have no values at all; that is "no baseline", not a crash at startup.
+            ApplyBaseline(file?.Values is null ? null : file);
         }
-        catch (Exception ex) when (ex is IOException or JsonException)
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
             ApplyBaseline(null);
         }

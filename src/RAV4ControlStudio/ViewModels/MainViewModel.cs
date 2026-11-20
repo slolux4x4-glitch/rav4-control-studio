@@ -1709,7 +1709,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         target.Clear();
         if (!Directory.Exists(folder)) return;
 
-        foreach (var file in patterns.SelectMany(p => new DirectoryInfo(folder).GetFiles(p)).OrderByDescending(f => f.LastWriteTime))
+        // Windows' "*.csv" can also match longer extensions such as ".csvx". These files are opened with whatever
+        // app Windows has for them, so only list exact matches.
+        var wanted = patterns.Select(Path.GetExtension).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in patterns.SelectMany(p => new DirectoryInfo(folder).GetFiles(p))
+                     .Where(f => wanted.Contains(f.Extension))
+                     .OrderByDescending(f => f.LastWriteTime))
         {
             target.Add(new FileItem(
                 file.Name,

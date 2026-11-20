@@ -53,6 +53,58 @@ public class SecurityTests
     }
 
     [Fact]
+    public void TheSessionTraceKeepsOnlyTheStartOfAHugeReply()
+    {
+        var trace = new SessionTrace();
+        trace.Exchange("0100", new string('4', 60_000), TimeSpan.FromMilliseconds(5));
+        trace.Exchange("010C", "41 0C 1A F8\r\r", TimeSpan.FromMilliseconds(5));
+
+        var text = new StringWriter();
+        trace.WriteTo(text);
+        string written = text.ToString();
+
+        Assert.True(written.Length < SessionTrace.MaxRecordedReply + 500, $"trace is {written.Length:N0} characters");
+        Assert.Contains("58,000 more characters not kept", written);
+        Assert.Contains("41 0C 1A F8\\r\\r", written); // normal replies are kept whole
+    }
+
+    [Fact]
+    public void ABadNumberFormatInAParameterFileIsReportedWhenLoading()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "rav4-sec-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "p.json"),
+                """[{"name":"Good","id":"0C"},{"name":"Bad","id":"0D","format":"F2000000000"}]""");
+            var (list, errors) = Obd2.Core.Obd.CustomParameter.LoadFolder(dir);
+
+            Assert.Equal("Good", Assert.Single(list).Name);
+            Assert.Contains("p.json", Assert.Single(errors));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void AnOversizedParameterFileIsSkippedWithAMessage()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "rav4-sec-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            using (var big = File.Create(Path.Combine(dir, "huge.json")))
+                big.SetLength(Obd2.Core.Obd.UserFiles.MaxBytes + 1);
+            File.WriteAllText(Path.Combine(dir, "ok.json"), """[{"name":"Rpm","id":"0C"}]""");
+
+            var (list, errors) = Obd2.Core.Obd.CustomParameter.LoadFolder(dir);
+
+            Assert.Single(list);
+            Assert.Contains("not read", Assert.Single(errors));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
     public void ANormalSizedReplyStillArrives()
     {
         string reply = string.Join("\r", Enumerable.Repeat("7E8 06 41 00 BE 3F A8 13", 40));

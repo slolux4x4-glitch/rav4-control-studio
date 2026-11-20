@@ -43,7 +43,7 @@ public sealed class CustomParameter
         {
             try
             {
-                using var doc = JsonDocument.Parse(File.ReadAllText(file));
+                using var doc = JsonDocument.Parse(UserFiles.ReadAllText(file));
                 if (doc.RootElement.ValueKind != JsonValueKind.Array) { errors.Add($"{Path.GetFileName(file)}: expected a JSON array"); continue; }
 
                 foreach (var item in doc.RootElement.EnumerateArray())
@@ -80,8 +80,12 @@ public sealed class CustomParameter
         int bytes = (int)N("bytes", 1);
         if (bytes is < 1 or > 8) throw new FormatException("bytes must be 1 to 8");
 
+        // Try the number format now, so a bad one is reported with the file instead of failing on every reading.
+        string format = S("format", "0.#");
+        _ = 1234.5.ToString(format, CultureInfo.InvariantCulture);
+
         return new CustomParameter(S("name"), S("unit", ""), service, id, header, bytes, S("formula", "A"),
-            N("min", 0), N("max", 100), S("format", "0.#"));
+            N("min", 0), N("max", 100), format);
     }
 }
 

@@ -293,7 +293,7 @@ public static class DtcDatabase
 
     private static void ReadJson(string file, Dictionary<string, DtcEntry> into)
     {
-        using var doc = JsonDocument.Parse(File.ReadAllText(file));
+        using var doc = JsonDocument.Parse(UserFiles.ReadAllText(file));
         if (doc.RootElement.ValueKind != JsonValueKind.Array) return;
 
         foreach (var item in doc.RootElement.EnumerateArray())
@@ -308,6 +308,7 @@ public static class DtcDatabase
 
     private static void ReadCsv(string file, Dictionary<string, DtcEntry> into)
     {
+        UserFiles.CheckSize(file);
         foreach (var line in File.ReadLines(file))
         {
             var parts = SplitCsv(line);
