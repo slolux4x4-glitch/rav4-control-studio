@@ -32,8 +32,8 @@ IElmTransport OpenAdapter() => config.AdapterMode == "Serial"
     ? new SerialElmTransport(config.SerialPort!, config.Baud)
     : new TcpElmTransport(config.AdapterHost, config.AdapterPort);
 
-using var server = new BridgeServer(OpenAdapter, config.Code);
-server.Log += line => Console.WriteLine($"{DateTime.Now:HH:mm:ss}  {line}");
+using var server = new BridgeServer(OpenAdapter, config.Code, config.Protocol);
+server.Log += Console.WriteLine; // each line already starts with the time
 try
 {
     server.Start(config.ListenPort);
@@ -50,6 +50,9 @@ Console.WriteLine($"Adapter:      {adapter}");
 Console.WriteLine($"Access code:  {config.Code}");
 Console.WriteLine("Connect from the other PC (OBD2 Connection > Laptop bridge) to one of:");
 foreach (var ip in Addresses()) Console.WriteLine($"              {ip}  port {server.Port}");
+Console.WriteLine();
+Console.WriteLine("Web page for a phone, tablet or another PC on the same network (live dials, fault codes, status):");
+foreach (var ip in Addresses()) Console.WriteLine($"              http://{ip}:{server.Port}/#t={config.Code}");
 Console.WriteLine();
 Console.WriteLine("Do not connect RAV4 Control Studio on this laptop to the adapter at the same time: the adapter takes one connection.");
 Console.WriteLine("If Windows asks, allow RAV4 Bridge on private networks. Press Ctrl+C or close this window to stop.");

@@ -72,7 +72,7 @@ public sealed partial class MainViewModel
     internal BridgeConfig? BuildBridgeConfig(out string problem)
     {
         problem = "";
-        var config = new BridgeConfig { ListenPort = BridgeListenPort, Code = BridgeAccessCode };
+        var config = new BridgeConfig { ListenPort = BridgeListenPort, Code = BridgeAccessCode, Protocol = SelectedProtocol.Number };
         switch (SelectedMode)
         {
             case ConnectionMode.Wifi:
@@ -127,7 +127,7 @@ public sealed partial class MainViewModel
         try
         {
             using var _ = Process.Start(new ProcessStartInfo(BridgeExe, $"\"{BridgeConfigPath}\"") { UseShellExecute = true });
-            BridgeStatus = $"RAV4 Bridge started. On the other PC choose Laptop bridge, enter this laptop's address, port {BridgeListenPort} and code {BridgeAccessCode}.";
+            BridgeStatus = $"RAV4 Bridge started. On the other PC choose Laptop bridge, enter this laptop's address, port {BridgeListenPort} and code {BridgeAccessCode}. A phone can open the web page address shown in the bridge window.";
         }
         catch (System.ComponentModel.Win32Exception ex)
         {

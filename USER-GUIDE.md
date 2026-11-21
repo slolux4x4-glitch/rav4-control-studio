@@ -77,7 +77,17 @@ RAV4 Bridge lets the app on one PC (for example your desktop) use the adapter th
 
 Only one PC can use the bridge at a time, and the laptop's own copy of the app must stay disconnected while the bridge runs. Press **New code** in Settings to change the code (then restart RAV4 Bridge). Close the RAV4 Bridge window to stop sharing.
 
-## 6. Alerts
+### Bridge web page (phone, tablet or any PC)
+
+RAV4 Bridge also serves a web page in the same style as the app. The bridge window lists its address, for example `http://192.168.1.50:35100/#t=yourcode`; open it in a browser on any device on the same network (the code after `#t=` logs you in, or type it when asked).
+
+- **Live**: speed, engine speed, coolant and battery dials, plus throttle and engine load. Switch Metric / Imperial at the top.
+- **Codes**: press **Read codes** for stored, pending and permanent codes and the readiness monitors.
+- **Status**: the adapter, which PC is using the bridge, how many commands were passed on or refused, and recent events.
+
+While a PC is connected through the bridge, the page shows the values that PC is reading (nothing extra is asked of the car), and codes are read on that PC instead. With no PC connected, the bridge reads the car itself while the page is open. The page is read-only too.
+
+
 
 Set limits for coolant temperature, battery voltage and engine speed in **Settings**. The app warns you when a value passes its limit.
 

@@ -103,6 +103,78 @@ public sealed class BridgeTests : IDisposable
     }
 
     [Fact]
+    public async Task ThePageIsServedWithoutTheCodeButItsDataIsNot()
+    {
+        using var http = new HttpClient();
+        var page = await http.GetAsync($"http://127.0.0.1:{_server.Port}/");
+        Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+        Assert.Contains("RAV4 Control Studio", await page.Content.ReadAsStringAsync());
+        Assert.Contains("default-src 'none'", string.Join("", page.Headers.GetValues("Content-Security-Policy")));
+
+        Assert.Equal(HttpStatusCode.NotFound, (await http.GetAsync($"http://127.0.0.1:{_server.Port}/favicon.ico")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await http.GetAsync($"http://127.0.0.1:{_server.Port}/api/live")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await http.GetAsync($"http://127.0.0.1:{_server.Port}/api/status")).StatusCode);
+
+        // Requests without any code (a browser asking for an icon, say) do not count as wrong guesses.
+        var withCode = new HttpRequestMessage(HttpMethod.Get, $"http://127.0.0.1:{_server.Port}/api/status");
+        withCode.Headers.Add("X-Bridge-Code", Code);
+        Assert.Equal(HttpStatusCode.OK, (await http.SendAsync(withCode)).StatusCode);
+    }
+
+    private async Task<System.Text.Json.JsonElement> Api(HttpClient http, string path, HttpMethod? method = null)
+    {
+        var request = new HttpRequestMessage(method ?? HttpMethod.Get, $"http://127.0.0.1:{_server.Port}{path}");
+        request.Headers.Add("X-Bridge-Code", Code);
+        var response = await http.SendAsync(request);
+        return System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+    }
+
+    [Fact]
+    public async Task ThePageShowsTheValuesAPcIsReadingWithoutAskingTheCarAgain()
+    {
+        var transport = new BridgeElmTransport("127.0.0.1", _server.Port, Code);
+        transport.Open();
+        using var obd = new ObdService(transport);
+        obd.Initialize(6);
+        double rpm = obd.ReadPid(PidCatalog.Find(0x0C)!)!.Value;
+        long relayed = _server.Requests;
+
+        using var http = new HttpClient();
+        var live = await Api(http, "/api/live");
+        Assert.Equal("pc", live.GetProperty("source").GetString());
+        Assert.Equal("127.0.0.1", live.GetProperty("pc").GetString());
+        Assert.Equal(Math.Round(rpm, 2), live.GetProperty("values").GetProperty("rpm").GetDouble());
+        Assert.Equal(relayed, _server.Requests); // the page read nothing from the car itself
+
+        // While a PC drives the adapter, the page does not read codes itself (it would disturb the PC's session).
+        var codes = await Api(http, "/api/codes", HttpMethod.Post);
+        Assert.Contains("is using the adapter", codes.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task WithNoPcTheBridgeReadsTheCarItselfForThePage()
+    {
+        using var http = new HttpClient();
+        string? source = null;
+        for (int i = 0; i < 40 && source != "bridge"; i++)
+        {
+            source = (await Api(http, "/api/live")).GetProperty("source").GetString();
+            if (source != "bridge") await Task.Delay(250);
+        }
+        Assert.Equal("bridge", source);
+        var live = await Api(http, "/api/live");
+        Assert.InRange(live.GetProperty("values").GetProperty("volt").GetDouble(), 13, 15);
+
+        var codes = await Api(http, "/api/codes", HttpMethod.Post);
+        Assert.Equal("P0420", codes.GetProperty("stored")[0].GetProperty("code").GetString());
+        Assert.True(codes.GetProperty("monitors").GetArrayLength() > 0);
+
+        var status = await Api(http, "/api/status");
+        Assert.Equal(SimulatedElmTransport.SimulatedVin, status.GetProperty("vin").GetString());
+        Assert.Equal(0, status.GetProperty("refused").GetInt64());
+    }
+
+    [Fact]
     public void ConfigProblemsAreReported()
     {
         var good = new BridgeConfig();

@@ -12,6 +12,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Data/dtc.txt" LogicalName="dtc.txt" />
     <EmbeddedResource Include="Data/dtc_obdex.json.gz" LogicalName="dtc_obdex.json.gz" />
+    <EmbeddedResource Include="Bridge/bridge.html" LogicalName="bridge.html" />
   </ItemGroup>
 
   <ItemGroup>

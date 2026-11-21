@@ -18,6 +18,9 @@ public sealed class BridgeConfig
     public string? SerialPort { get; set; }
     public int Baud { get; set; } = 38400;
 
+    /// <summary>ELM327 protocol number the bridge uses when it reads the car itself (6 = CAN 11-bit 500k, 0 = automatic).</summary>
+    public int Protocol { get; set; } = 6;
+
     /// <summary>Port the bridge listens on for the other PC.</summary>
     public int ListenPort { get; set; } = DefaultPort;
 

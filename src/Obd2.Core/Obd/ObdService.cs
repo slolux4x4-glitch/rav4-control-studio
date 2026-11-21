@@ -12,6 +12,13 @@ public sealed class ObdService : IDisposable
     private readonly ElmClient _elm;
     private readonly HashSet<byte> _supported = new();
 
+    /// <summary>Works on an adapter link that is already open and shared (RAV4 Bridge reads live values for its web page).</summary>
+    public ObdService(ElmClient elm)
+    {
+        _elm = elm;
+        _elm.Traffic += entry => Traffic?.Invoke(entry);
+    }
+
     public ObdService(IElmTransport transport, SessionTrace? trace = null)
     {
         _elm = new ElmClient(transport, trace);
