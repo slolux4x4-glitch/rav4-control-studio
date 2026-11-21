@@ -155,14 +155,17 @@ public sealed class BridgeTests : IDisposable
     public async Task WithNoPcTheBridgeReadsTheCarItselfForThePage()
     {
         using var http = new HttpClient();
-        string? source = null;
-        for (int i = 0; i < 40 && source != "bridge"; i++)
+        // The bridge reads the values one after another, so wait until the battery voltage (read fourth) is in too;
+        // a slow machine (such as the CI runner) can take a few rounds.
+        System.Text.Json.JsonElement live = default;
+        for (int i = 0; i < 80; i++)
         {
-            source = (await Api(http, "/api/live")).GetProperty("source").GetString();
-            if (source != "bridge") await Task.Delay(250);
+            live = await Api(http, "/api/live");
+            if (live.GetProperty("source").GetString() == "bridge" &&
+                live.GetProperty("values").GetProperty("volt").ValueKind == System.Text.Json.JsonValueKind.Number) break;
+            await Task.Delay(250);
         }
-        Assert.Equal("bridge", source);
-        var live = await Api(http, "/api/live");
+        Assert.Equal("bridge", live.GetProperty("source").GetString());
         Assert.InRange(live.GetProperty("values").GetProperty("volt").GetDouble(), 13, 15);
 
         var codes = await Api(http, "/api/codes", HttpMethod.Post);
