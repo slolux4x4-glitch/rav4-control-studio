@@ -2,13 +2,6 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="clr-namespace:RAV4ControlStudio.Controls">
-    <UserControl.Resources>
-        <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
-            <Setter Property="Margin" Value="0,12,0,6"/>
-        </Style>
-    </UserControl.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -23,13 +16,13 @@
         <c:PageHeader Grid.ColumnSpan="2" Title="OBD2 Connection" Subtitle="Choose how this PC reaches the ELM327 adapter plugged into the car's OBD-II port."/>
 
         <!-- Connection type tiles -->
-        <UniformGrid Grid.Row="1" Grid.ColumnSpan="2" Columns="3" Margin="2,12,2,8">
+        <UniformGrid Grid.Row="1" Grid.ColumnSpan="2" Columns="4" Margin="2,12,2,8">
             <RadioButton Style="{StaticResource ModeTile}" GroupName="Mode" IsChecked="{Binding IsSerialMode}">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Style="{StaticResource IconText}" Text="&#xE702;" FontSize="26" Margin="0,0,16,0" Foreground="{StaticResource AccentBrush}"/>
                     <StackPanel>
                         <TextBlock Text="Bluetooth / USB" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="Serial (COM) link. Pair it in Windows first." Style="{StaticResource Muted}" Margin="0,4,0,0"/>
+                        <TextBlock Text="COM port. Pair in Windows first." Style="{StaticResource Muted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </StackPanel>
             </RadioButton>
@@ -38,7 +31,7 @@
                     <TextBlock Style="{StaticResource IconText}" Text="&#xE701;" FontSize="26" Margin="0,0,16,0" Foreground="{StaticResource AccentBrush}"/>
                     <StackPanel>
                         <TextBlock Text="Wi-Fi" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="Wi-Fi ELM327 over TCP (192.168.0.10)." Style="{StaticResource Muted}" Margin="0,4,0,0"/>
+                        <TextBlock Text="ELM327 adapter over Wi-Fi." Style="{StaticResource Muted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </StackPanel>
             </RadioButton>
@@ -47,7 +40,16 @@
                     <TextBlock Style="{StaticResource IconText}" Text="&#xE7F4;" FontSize="26" Margin="0,0,16,0" Foreground="{StaticResource GoodBrush}"/>
                     <StackPanel>
                         <TextBlock Text="Demo (simulated ECU)" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="Simulated RAV4. No hardware needed." Style="{StaticResource Muted}" Margin="0,4,0,0"/>
+                        <TextBlock Text="No hardware needed." Style="{StaticResource Muted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </StackPanel>
+            </RadioButton>
+            <RadioButton Style="{StaticResource ModeTile}" GroupName="Mode" IsChecked="{Binding IsBridgeMode}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource IconText}" Text="&#xE7F8;" FontSize="26" Margin="0,0,16,0" Foreground="{StaticResource AccentBrush}"/>
+                    <StackPanel>
+                        <TextBlock Text="Laptop bridge" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="Via RAV4 Bridge on a laptop." Style="{StaticResource Muted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </StackPanel>
             </RadioButton>
@@ -102,6 +104,20 @@
                     <TextBox Text="{Binding WifiPort}" Padding="8,7" Width="160" HorizontalAlignment="Left"/>
                     <TextBlock Style="{StaticResource Muted}" Margin="0,10,0,0" TextWrapping="Wrap">
                         Join the Wi-Fi network the adapter creates (for example "WiFi_OBDII"), then keep this PC on that network while connected.
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Laptop bridge -->
+                <StackPanel Visibility="{Binding IsBridgeMode, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Laptop address" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding BridgeHost, UpdateSourceTrigger=PropertyChanged}" Padding="8,7"/>
+                    <TextBlock Text="Bridge port" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding BridgePort}" Padding="8,7" Width="160" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Access code" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding BridgeCode, UpdateSourceTrigger=PropertyChanged}" Padding="8,7" FontFamily="Consolas"/>
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,10,0,0" TextWrapping="Wrap">
+                        On the laptop: RAV4 Control Studio, Settings, Laptop bridge, Start RAV4 Bridge. Its window shows the
+                        address, port and code to enter here. Both PCs must be on the same network (for example Ethernet).
                     </TextBlock>
                 </StackPanel>
 

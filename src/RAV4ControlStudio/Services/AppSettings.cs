@@ -16,6 +16,9 @@ public sealed class AppSettings
     public bool Imperial { get; set; }
     public int PollDelayMs { get; set; } = 15;
     public bool SimulateFaults { get; set; }
+    public string BridgeHost { get; set; } = "";
+    public int BridgePort { get; set; } = Obd2.Core.Bridge.BridgeConfig.DefaultPort;
+    public string BridgeCode { get; set; } = "";
     public bool AutoReconnect { get; set; } = true;
     public bool AlertsEnabled { get; set; } = true;
     public double AlertCoolantC { get; set; } = 105;

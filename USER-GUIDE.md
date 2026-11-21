@@ -59,6 +59,24 @@ Settings > Phone view starts a read-only web page on the PC. Join the phone to t
 
 With a Wi-Fi adapter the PC's Wi-Fi is taken by the adapter, so the phone needs to reach the PC another way (for example through a wired network).
 
+## 5a. Laptop bridge (use the adapter from another PC)
+
+RAV4 Bridge lets the app on one PC (for example your desktop) use the adapter that a laptop at the car is connected to. Both PCs must be on the same network (for example the laptop on Ethernet, its Wi-Fi on the adapter). It stays read-only: the laptop checks every command and refuses anything that is not a read.
+
+**On the laptop (next to the car):**
+
+1. Open RAV4 Control Studio. On **OBD2 Connection**, choose how the laptop reaches the adapter (**Wi-Fi** or **Bluetooth / USB**) and fill in its details. Do not connect.
+2. Go to **Settings** > **Laptop bridge** and press **Start RAV4 Bridge**. If Windows asks, allow it on private networks.
+3. The RAV4 Bridge window shows the laptop's addresses, the port (35100) and an access code.
+
+**On the other PC:**
+
+1. On **OBD2 Connection**, choose **Laptop bridge**.
+2. Enter one of the laptop's addresses (the one on the shared network), the port and the access code.
+3. Press **Connect ECU**. Everything then works as if the adapter were plugged into this PC.
+
+Only one PC can use the bridge at a time, and the laptop's own copy of the app must stay disconnected while the bridge runs. Press **New code** in Settings to change the code (then restart RAV4 Bridge). Close the RAV4 Bridge window to stop sharing.
+
 ## 6. Alerts
 
 Set limits for coolant temperature, battery voltage and engine speed in **Settings**. The app warns you when a value passes its limit.

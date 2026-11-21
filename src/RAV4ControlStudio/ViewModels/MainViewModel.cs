@@ -15,7 +15,7 @@ namespace RAV4ControlStudio.ViewModels;
 
 public enum LinkState { Disconnected, Connecting, Connected, Simulated, Replay, Error }
 
-public enum ConnectionMode { Serial, Wifi, Demo, Replay }
+public enum ConnectionMode { Serial, Wifi, Demo, Replay, Bridge }
 
 public sealed record ProtocolOption(int Number, string Label)
 {
@@ -263,6 +263,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 Raise(nameof(IsSerialMode));
                 Raise(nameof(IsWifiMode));
                 Raise(nameof(IsDemoMode));
+                Raise(nameof(IsBridgeMode));
                 Raise(nameof(InterfaceLabel));
             }
         }
@@ -271,6 +272,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public bool IsSerialMode { get => _mode == ConnectionMode.Serial; set { if (value) SelectedMode = ConnectionMode.Serial; } }
     public bool IsWifiMode { get => _mode == ConnectionMode.Wifi; set { if (value) SelectedMode = ConnectionMode.Wifi; } }
     public bool IsDemoMode { get => _mode == ConnectionMode.Demo; set { if (value) SelectedMode = ConnectionMode.Demo; } }
+    public bool IsBridgeMode { get => _mode == ConnectionMode.Bridge; set { if (value) SelectedMode = ConnectionMode.Bridge; } }
 
     public ObservableCollection<PortOption> Ports { get; } = new();
 
@@ -386,7 +388,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         LinkState.Simulated => ("Demo Mode", "Simulated ECU · Read-only"),
         LinkState.Replay => ("Log Replay", "Saved log · Read-only"),
-        LinkState.Connected => ("Vehicle Mode", session == ConnectionMode.Wifi ? "Wi-Fi adapter · Read-only" : "Serial adapter · Read-only"),
+        LinkState.Connected => ("Vehicle Mode", session switch { ConnectionMode.Wifi => "Wi-Fi adapter · Read-only", ConnectionMode.Bridge => "Laptop bridge · Read-only", _ => "Serial adapter · Read-only" }),
         LinkState.Connecting => ("Connecting…", "Read-only"),
         _ => ("Not Connected", "Read-only"),
     };
@@ -423,6 +425,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         ConnectionMode.Wifi => "Wi-Fi Adapter",
         ConnectionMode.Demo => "Simulated Adapter",
         ConnectionMode.Replay => "Log Replay",
+        ConnectionMode.Bridge => "Laptop Bridge",
         _ => "Bluetooth / USB Adapter",
     };
     public Brush UsbStatusBrush => IsConnected ? _good : _muted;
@@ -1073,6 +1076,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             ConnectionMode.Demo => new SimulatedElmTransport(faults),
             ConnectionMode.Replay => new LogReplayTransport(ReplayPath),
             ConnectionMode.Wifi => new TcpElmTransport(host, wifiPort),
+            ConnectionMode.Bridge => new BridgeElmTransport(BridgeHost, BridgePort, BridgeCode),
             _ => new SerialElmTransport(port!, baud),
         };
 
@@ -1129,6 +1133,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             Notify("Choose an adapter port, or switch to Wi-Fi or Demo.");
             return;
         }
+        if (mode == ConnectionMode.Bridge && (BridgeHost.Trim().Length == 0 || BridgePort is < 1 or > 65535 || BridgeCode.Trim().Length == 0))
+        {
+            Notify("Enter the laptop's address, the bridge port and the access code shown in RAV4 Bridge on the laptop.");
+            return;
+        }
         if (mode == ConnectionMode.Wifi && (host.Length == 0 || wifiPort is < 1 or > 65535))
         {
             Notify("Enter the Wi-Fi adapter address and a port from 1 to 65535 (usually 35000).");
@@ -1150,6 +1159,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             ConnectionMode.Demo => "Starting simulated ECU…",
             ConnectionMode.Replay => "Opening log replay…",
             ConnectionMode.Wifi => $"Connecting to {host}:{wifiPort}…",
+            ConnectionMode.Bridge => $"Connecting to RAV4 Bridge at {BridgeHost.Trim()}:{BridgePort}…",
             _ => $"Opening {port} at {baud} baud…",
         };
         Notify(opening);

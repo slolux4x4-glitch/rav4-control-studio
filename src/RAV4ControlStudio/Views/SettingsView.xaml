@@ -101,6 +101,26 @@
 
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
+                            <TextBlock Text="Laptop bridge" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
+                            <TextBlock Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap"
+                                       Text="Use this on the laptop next to the car. RAV4 Bridge shares the adapter chosen on the OBD2 Connection page (Wi-Fi or Bluetooth / USB) with RAV4 Control Studio on another PC on the same network. Read-only: the laptop checks every command."/>
+                            <TextBlock Text="Bridge port" Style="{StaticResource Lbl}"/>
+                            <TextBox Text="{Binding BridgeListenPort}" Padding="8,7" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Access code" Style="{StaticResource Lbl}"/>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Margin="8,0,0,0" Command="{Binding NewBridgeCodeCommand}" Content="New code"/>
+                                <TextBox Text="{Binding BridgeAccessCode, Mode=OneWay}" IsReadOnly="True" Padding="8,7" FontFamily="Consolas"/>
+                            </DockPanel>
+                            <WrapPanel Margin="0,10,0,0">
+                                <Button Style="{StaticResource ActionButton}" Margin="0,0,8,8" Command="{Binding SaveBridgeSettingsCommand}" Content="Save bridge settings"/>
+                                <Button Style="{StaticResource ActionButton}" Margin="0,0,0,8" Command="{Binding StartBridgeCommand}" Content="Start RAV4 Bridge"/>
+                            </WrapPanel>
+                            <TextBlock Text="{Binding BridgeStatus}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
                             <TextBlock Text="Files and parameters" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
                             <TextBlock Text="{Binding AppFolderText}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10"/>
                             <WrapPanel>

@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
+using Obd2.Core.Bridge;
 using Obd2.Core.Elm;
 using Obd2.Core.Obd;
 using RAV4ControlStudio.Services;
@@ -155,7 +156,7 @@ public sealed partial class MainViewModel
         nameof(SelectedMode), nameof(WifiHost), nameof(WifiPort), nameof(SelectedBaud), nameof(SelectedProtocol),
         nameof(SelectedPort), nameof(PollDelayMs), nameof(SimulateFaults), nameof(UseImperial), nameof(AutoReconnect),
         nameof(AlertsEnabled), nameof(AlertCoolantC), nameof(AlertVoltageMin), nameof(AlertRpmMax), nameof(SelectedUiScale),
-        nameof(SelectedVehicle),
+        nameof(SelectedVehicle), nameof(BridgeHost), nameof(BridgePort), nameof(BridgeCode),
     };
 
     private bool _autoReconnect = true;
@@ -206,6 +207,10 @@ public sealed partial class MainViewModel
         _alertCoolantC = SafeClamp(saved.AlertCoolantC, 60, 150, 105);
         _alertVoltageMin = SafeClamp(saved.AlertVoltageMin, 6, 14, 11.5);
         _alertRpmMax = SafeClamp(saved.AlertRpmMax, 1000, 9000, 6500);
+        _bridgeHost = (saved.BridgeHost ?? "").Trim();
+        _bridgePort = saved.BridgePort is >= 1 and <= 65535 ? saved.BridgePort : BridgeConfig.DefaultPort;
+        _bridgeCode = (saved.BridgeCode ?? "").Trim();
+        LoadBridgeConfig();
         _uiScale = UiScaleOptions.FirstOrDefault(o => Math.Abs(o.Scale - saved.UiScale) < 0.01) ?? UiScaleOptions[1];
 
         foreach (var v in (saved.Vehicles ?? new()).Where(v => !string.IsNullOrWhiteSpace(v)).Distinct()) Vehicles.Add(v);
@@ -225,6 +230,9 @@ public sealed partial class MainViewModel
         s.UiScale = UiScale;
         s.Vehicle = SelectedVehicle;
         s.Vehicles = Vehicles.ToList();
+        s.BridgeHost = BridgeHost;
+        s.BridgePort = BridgePort;
+        s.BridgeCode = BridgeCode;
     }
 
     // ===================================================== commands for the new features
@@ -255,6 +263,7 @@ public sealed partial class MainViewModel
         ReloadParametersCommand = new RelayCommand(ReloadCustomParameters);
         ClearTrendsCommand = new RelayCommand<TrendItem>(_ => { foreach (var t in TrendItems) t.IsSelected = false; });
         SaveSessionLogCommand = new RelayCommand(SaveSessionLog);
+        InitBridgeCommands();
         ClearCodesCommand = new RelayCommand(() => Fire(ClearCodesAsync()), CanClearCodes);
     }
 

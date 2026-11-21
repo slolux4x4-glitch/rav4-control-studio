@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>RAV4Bridge</AssemblyName>
+    <RootNamespace>RAV4Bridge</RootNamespace>
+    <ApplicationIcon>..\RAV4ControlStudio\Assets\app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>RAV4 Bridge</Product>
+    <Description>Shares the laptop's OBD-II adapter with RAV4 Control Studio on another PC. Read-only.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Obd2.Core\Obd2.Core.csproj" />
+  </ItemGroup>
+
+</Project>

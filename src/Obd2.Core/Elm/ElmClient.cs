@@ -120,7 +120,24 @@ public sealed class ElmClient : IDisposable
     // Set when waiting for a late reply also timed out, so the adapter has gone quiet. Cleared by any reply.
     private bool _adapterSilent;
 
-    private ElmResponse Send(string command, TimeSpan timeout)
+    /// <summary>True when the command is on the read-only allowlist (an AT setup command or a read-only OBD request).</summary>
+    public static bool IsAllowed(string command) => AllowedAt.IsMatch(command) || AllowedObd.IsMatch(command);
+
+    /// <summary>
+    /// For the laptop bridge: sends one allowlisted command and returns the adapter's reply exactly as received,
+    /// so the PC at the other end can parse it as if it were talking to the adapter itself. Anything not on the
+    /// allowlist (clearing codes included) is refused here, whatever the other PC asks for.
+    /// </summary>
+    public string SendRaw(string command, TimeSpan timeout)
+    {
+        if (!IsAllowed(command))
+            throw new InvalidOperationException($"'{command}' is not on the read-only allowlist.");
+        string raw = "";
+        Send(command, timeout, r => raw = r);
+        return raw;
+    }
+
+    private ElmResponse Send(string command, TimeSpan timeout, Action<string>? rawReply = null)
     {
         lock (_gate) // one request on the wire at a time
         {
@@ -147,6 +164,7 @@ public sealed class ElmClient : IDisposable
             }
             _trace?.Exchange(command, raw, clock!.Elapsed);
             _adapterSilent = false;
+            rawReply?.Invoke(raw);
             var response = Parse(command, raw);
 
             Traffic?.Invoke(new TrafficEntry(
