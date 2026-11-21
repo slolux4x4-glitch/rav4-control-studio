@@ -103,7 +103,7 @@
                         <StackPanel>
                             <TextBlock Text="Laptop bridge" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
                             <TextBlock Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap"
-                                       Text="Use this on the laptop next to the car. RAV4 Bridge shares the adapter chosen on the OBD2 Connection page (Wi-Fi or Bluetooth / USB) with RAV4 Control Studio on another PC on the same network. Read-only: the laptop checks every command."/>
+                                       Text="Use this on the laptop next to the car. RAV4 Bridge shares the adapter chosen on the OBD2 Connection page (Wi-Fi or Bluetooth / USB) with RAV4 Control Studio on another PC and with phones and tablets on the same network. Choose Demo there to share the simulated RAV4 instead, no car needed. Read-only: every command is checked."/>
                             <TextBlock Text="Bridge port" Style="{StaticResource Lbl}"/>
                             <TextBox Text="{Binding BridgeListenPort}" Padding="8,7" Width="120" HorizontalAlignment="Left"/>
                             <TextBlock Text="Access code" Style="{StaticResource Lbl}"/>

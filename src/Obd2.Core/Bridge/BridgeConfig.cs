@@ -11,12 +11,15 @@ public sealed class BridgeConfig
 {
     public const int DefaultPort = 35100;
 
-    /// <summary>How the laptop reaches the adapter: "Wifi" or "Serial".</summary>
+    /// <summary>How the laptop reaches the adapter: "Wifi", "Serial", or "Demo" (the built-in simulated RAV4, no car needed).</summary>
     public string AdapterMode { get; set; } = "Wifi";
     public string AdapterHost { get; set; } = "192.168.0.10";
     public int AdapterPort { get; set; } = 35000;
     public string? SerialPort { get; set; }
     public int Baud { get; set; } = 38400;
+
+    /// <summary>Demo only: the simulated car reports fault codes (P0420 stored, P0301 pending).</summary>
+    public bool SimulateFaults { get; set; }
 
     /// <summary>ELM327 protocol number the bridge uses when it reads the car itself (6 = CAN 11-bit 500k, 0 = automatic).</summary>
     public int Protocol { get; set; } = 6;
@@ -36,7 +39,7 @@ public sealed class BridgeConfig
     public IReadOnlyList<string> Problems()
     {
         var list = new List<string>();
-        if (AdapterMode is not ("Wifi" or "Serial")) list.Add("AdapterMode must be Wifi or Serial.");
+        if (AdapterMode is not ("Wifi" or "Serial" or "Demo")) list.Add("AdapterMode must be Wifi, Serial or Demo.");
         if (AdapterMode == "Wifi" && string.IsNullOrWhiteSpace(AdapterHost)) list.Add("The adapter address is empty.");
         if (AdapterMode == "Wifi" && AdapterPort is < 1 or > 65535) list.Add("The adapter port must be 1 to 65535.");
         if (AdapterMode == "Serial" && string.IsNullOrWhiteSpace(SerialPort)) list.Add("No COM port is chosen.");

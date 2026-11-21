@@ -75,6 +75,8 @@ RAV4 Bridge lets the app on one PC (for example your desktop) use the adapter th
 2. Enter one of the laptop's addresses (the one on the shared network), the port and the access code.
 3. Press **Connect ECU**. Everything then works as if the adapter were plugged into this PC.
 
+**Demo on your home network (no car):** choose **Demo** on the OBD2 Connection page instead of Wi-Fi or Bluetooth / USB, then **Start RAV4 Bridge**. The bridge then shares the simulated RAV4: other PCs connect through **Laptop bridge**, and phones and tablets open the web page, exactly as with the car. Tick **Simulate fault codes** first to see codes on the Codes tab. The page shows “Demo” so it is not mistaken for the real car.
+
 Only one PC can use the bridge at a time, and the laptop's own copy of the app must stay disconnected while the bridge runs. Press **New code** in Settings to change the code (then restart RAV4 Bridge). Close the RAV4 Bridge window to stop sharing.
 
 ### Bridge web page (phone, tablet or any PC)

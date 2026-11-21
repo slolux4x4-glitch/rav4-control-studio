@@ -181,6 +181,9 @@ public sealed class BridgeTests : IDisposable
         Assert.Empty(good.Problems());
         Assert.Equal(10, good.Code.Length);
 
+        Assert.Empty(new BridgeConfig { AdapterMode = "Demo" }.Problems()); // the simulated car needs no adapter details
+        Assert.NotEmpty(new BridgeConfig { AdapterMode = "Car" }.Problems());
+
         var bad = new BridgeConfig { AdapterMode = "Serial", SerialPort = null, ListenPort = 80, Code = "short" };
         Assert.Equal(3, bad.Problems().Count);
     }

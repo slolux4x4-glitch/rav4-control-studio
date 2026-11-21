@@ -95,7 +95,7 @@ body.fs .fs-hint{display:block}
 <div class="app">
   <header>
     <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" rx="10" fill="#0C1620" stroke="#275E8C"/><path d="M9 24l3-7c.6-1.4 1.6-2 3-2h10c1.4 0 2.4.6 3 2l3 7v5h-3v-2H12v2H9z" fill="none" stroke="#2AA7F5" stroke-width="2" stroke-linejoin="round"/><circle cx="14" cy="24" r="1.6" fill="#2AA7F5"/><circle cx="26" cy="24" r="1.6" fill="#2AA7F5"/></svg>
-    <div class="titles"><h1>RAV4 Control Studio</h1><p>2021 Toyota RAV4 · via RAV4 Bridge</p></div>
+    <div class="titles"><h1>RAV4 Control Studio</h1><p id="subtitle">2021 Toyota RAV4 · via RAV4 Bridge</p></div>
     <div class="pill"><span class="dot" id="dot"></span><span id="state">Connecting…</span></div>
   </header>
   <div class="body">
@@ -300,7 +300,8 @@ function render(live) {
   $("source").textContent = live.source === "pc" ? `Live from the PC at ${pc} using the bridge`
     : live.source === "bridge" ? "Live, read by the laptop" : pc ? `PC at ${pc} connected, waiting for values` : "Waiting for the car (ignition on?)";
   setState(live.source !== "none" ? "good" : live.adapterOpen ? "warn" : "bad",
-           live.source !== "none" ? "Live" : live.adapterOpen ? "Waiting for car" : "Adapter not connected");
+           (live.source !== "none" ? "Live" : live.adapterOpen ? "Waiting for car" : "Adapter not connected") + (live.demo ? " · Demo" : ""));
+  $("subtitle").textContent = live.demo ? "Simulated RAV4 (demo) · via RAV4 Bridge" : "2021 Toyota RAV4 · via RAV4 Bridge";
 }
 function setState(kind, text) { $("dot").className = "dot " + kind; $("state").textContent = text; }
 

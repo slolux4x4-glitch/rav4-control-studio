@@ -362,6 +362,7 @@ public sealed class BridgeServer : IDisposable
         return JsonSerializer.Serialize(new
         {
             source = any ? _lastSource : "none",
+            demo = _adapterName.StartsWith("DEMO", StringComparison.Ordinal),
             pc = PcActive ? _owner!.ToString() : null,
             adapterOpen = _elm is not null,
             values,

@@ -65,8 +65,12 @@ public sealed partial class MainViewModel
         _bridgeStatus = $"Saved: adapter {AdapterText(saved)}, bridge port {saved.ListenPort}.";
     }
 
-    private static string AdapterText(BridgeConfig c) =>
-        c.AdapterMode == "Serial" ? $"{c.SerialPort} at {c.Baud} baud" : $"Wi-Fi {c.AdapterHost}:{c.AdapterPort}";
+    private static string AdapterText(BridgeConfig c) => c.AdapterMode switch
+    {
+        "Serial" => $"{c.SerialPort} at {c.Baud} baud",
+        "Demo" => "Demo (simulated RAV4)",
+        _ => $"Wi-Fi {c.AdapterHost}:{c.AdapterPort}",
+    };
 
     /// <summary>The bridge uses the adapter this PC is set up for on the OBD2 Connection page (Wi-Fi or Bluetooth/USB).</summary>
     internal BridgeConfig? BuildBridgeConfig(out string problem)
@@ -85,8 +89,12 @@ public sealed partial class MainViewModel
                 config.SerialPort = SelectedPort?.Name;
                 config.Baud = SelectedBaud;
                 break;
+            case ConnectionMode.Demo:
+                config.AdapterMode = "Demo"; // the simulated RAV4, for trying the bridge and its web page without the car
+                config.SimulateFaults = SimulateFaults;
+                break;
             default:
-                problem = "On the OBD2 Connection page, choose Wi-Fi or Bluetooth / USB: that is the adapter the bridge will share.";
+                problem = "On the OBD2 Connection page, choose Wi-Fi, Bluetooth / USB or Demo: that is what the bridge will share.";
                 return null;
         }
         var problems = config.Problems();
