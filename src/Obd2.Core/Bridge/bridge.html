@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#070D14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>RAV4 Control Studio</title>
 <style>
 :root{
@@ -65,6 +68,19 @@ main{flex:1;min-width:0;padding:14px 14px 96px}
 .login input{width:100%;margin:12px 0;padding:11px 12px;border-radius:9px;border:1px solid var(--border);background:#111A24;color:var(--text);font:16px Consolas,monospace;letter-spacing:1px}
 .login .err{color:var(--bad);font-size:13px;min-height:18px}
 .readonly{font-size:12px;color:var(--muted);text-align:center;margin-top:18px}
+.head-actions{display:flex;gap:8px;align-items:center}
+.icon-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:7px 11px;font-size:13px;color:var(--soft);cursor:pointer}
+.icon-btn svg{width:16px;height:16px}
+.fs-hint{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(12,22,32,.92);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:12px;color:var(--soft);z-index:20;transition:opacity .6s}
+/* Full screen: only the dials, filling the screen */
+body.fs header,body.fs nav,body.fs .page-head,body.fs .tiles,body.fs .readonly{display:none}
+body.fs main{padding:8px;padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+body.fs .dials{height:calc(100vh - 16px);height:calc(100dvh - 16px);grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px}
+body.fs .dial-card{min-height:0;padding:8px 10px}
+body.fs .dial{flex:1;min-height:0;width:100%;height:100%;max-width:none;margin:0}
+body.fs .card-title{font-size:15px}
+body.fs .fs-hint{display:block}
+@media (orientation:landscape){body.fs .dials{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr}}
 @media (min-width:640px){.dials{grid-template-columns:1fr 1fr}.tiles{grid-template-columns:repeat(4,1fr)}.grid2{grid-template-columns:1fr 1fr}}
 @media (min-width:960px){
   nav{position:static;flex-direction:column;width:210px;border-top:0;border-right:1px solid var(--line);padding:10px 8px}
@@ -92,7 +108,10 @@ main{flex:1;min-width:0;padding:14px 14px 96px}
       <section class="page on" id="live">
         <div class="page-head">
           <div><h2>Live data</h2><p id="source">Waiting for data…</p></div>
-          <div class="seg" id="units"><button data-u="metric" class="on">Metric</button><button data-u="imperial">Imperial</button></div>
+          <div class="head-actions">
+            <div class="seg" id="units"><button data-u="metric" class="on">Metric</button><button data-u="imperial">Imperial</button></div>
+            <button class="icon-btn" id="fs-btn" title="Full screen" aria-label="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span>Full screen</span></button>
+          </div>
         </div>
         <div class="dials" id="dials"></div>
         <div class="tiles">
@@ -121,6 +140,8 @@ main{flex:1;min-width:0;padding:14px 14px 96px}
     </main>
   </div>
 </div>
+
+<div class="fs-hint" id="fs-hint">Tap anywhere to exit full screen</div>
 
 <div class="login" id="login">
   <div class="card">
@@ -351,6 +372,34 @@ async function tick() {
   } catch (e) { if (e.message !== "code") setState("bad", "Lost contact with the bridge"); }
   finally { busy = false; n++; }
 }
+// ---- full screen: the dials only. Any tap or key exits, as in the app.
+let fsOn = false, fsArmed = false, wakeLock = null;
+function enterFs() {
+  document.querySelector('nav button[data-page="live"]').click();
+  document.body.classList.add("fs"); fsOn = true; fsArmed = false;
+  setTimeout(() => fsArmed = true, 400); // the tap that opened full screen must not close it
+  const hint = $("fs-hint"); hint.style.opacity = 1; setTimeout(() => hint.style.opacity = 0, 2500);
+  // Real full screen and keeping the screen awake are extras: neither may hold up the rest (iPhone Safari refuses
+  // full screen for pages, and some browsers never answer the request).
+  const root = document.documentElement, req = root.requestFullscreen || root.webkitRequestFullscreen;
+  if (req) { try { const p = req.call(root); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+  if ("wakeLock" in navigator) navigator.wakeLock.request("screen").then(l => { wakeLock = l; }).catch(() => {});
+}
+function exitFs() {
+  if (!fsOn) return;
+  fsOn = false; document.body.classList.remove("fs");
+  const fe = document.fullscreenElement || document.webkitFullscreenElement;
+  if (fe) { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (ex) try { ex.call(document); } catch (e) {} }
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+$("fs-btn").onclick = e => { e.stopPropagation(); enterFs(); };
+for (const ev of ["pointerdown", "mousedown", "touchstart", "click"])
+  document.addEventListener(ev, () => { if (fsOn && fsArmed) exitFs(); }, {capture: true, passive: true});
+document.addEventListener("keydown", () => { if (fsOn && fsArmed) exitFs(); }, true);
+const onFsChange = () => { if (fsOn && !(document.fullscreenElement || document.webkitFullscreenElement) && fsArmed) exitFs(); }; // Esc, back button
+document.addEventListener("fullscreenchange", onFsChange); document.addEventListener("webkitfullscreenchange", onFsChange);
+document.addEventListener("visibilitychange", async () => { if (fsOn && !document.hidden && "wakeLock" in navigator) try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {} });
+
 setUnits(imperial);
 setInterval(tick, 500); tick();
 </script>

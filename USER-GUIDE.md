@@ -81,7 +81,7 @@ Only one PC can use the bridge at a time, and the laptop's own copy of the app m
 
 RAV4 Bridge also serves a web page in the same style as the app. The bridge window lists its address, for example `http://192.168.1.50:35100/#t=yourcode`; open it in a browser on any device on the same network (the code after `#t=` logs you in, or type it when asked).
 
-- **Live**: speed, engine speed, coolant and battery dials, plus throttle and engine load. Switch Metric / Imperial at the top.
+- **Live**: speed, engine speed, coolant and battery dials, plus throttle and engine load. Switch Metric / Imperial at the top. **Full screen** shows only the dials (tap anywhere to exit) and keeps the screen awake; on an iPhone, add the page to the Home Screen first to hide Safari's bars.
 - **Codes**: press **Read codes** for stored, pending and permanent codes and the readiness monitors.
 - **Status**: the adapter, which PC is using the bridge, how many commands were passed on or refused, and recent events.
 
